@@ -253,7 +253,7 @@ function showMatches(c1, c2) {
       <th>${flag(c2,12)} ${names[c2]||c2}</th>
     </tr>`;
     const fmtMatches = (ms) => ms.length === 0 ? '<span style="color:#444">—</span>' :
-      ms.map(m => `<span style="white-space:nowrap;font-size:11px;color:#bbb">${m.date.slice(0,7)} <b>${m.result}</b></span>`).join('<br>');
+      ms.map(m => `<span style="display:inline-block;font-size:11px;color:#bbb;line-height:1.4">${m.date.slice(0,7)} <b>${m.result}</b><br><span style="font-size:10px;color:#666">${m.home} – ${m.away}</span></span>`).join('<br>');
     tbody.innerHTML = common.length === 0
       ? `<tr><td colspan="3" style="color:#555;padding:16px;text-align:center">Aucun adversaire commun</td></tr>`
       : common.map(c => `

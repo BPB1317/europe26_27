@@ -64,7 +64,11 @@
   #modal-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   #modal-header img { border-radius:2px; }
   #modal-title { font-size:1rem; font-weight:700; color:#fff; flex:1; }
-  #modal-count { font-size:0.8rem; color:#666; white-space:nowrap; }
+  #modal-count { font-size:0.8rem; color:#666; white-space:nowrap; display:flex; gap:4px; align-items:center; }
+  .modal-tab { background:transparent; border:1px solid #2e2e50; border-radius:6px; color:#888;
+    font-size:11px; padding:3px 10px; cursor:pointer; }
+  .modal-tab.active { background:#1a3a6a; color:#6ab0ff; border-color:#2a5090; font-weight:600; }
+  .modal-tab:hover:not(.active) { border-color:#555; color:#ccc; }
   .close { cursor:pointer; font-size:1.3rem; color:#555; margin-left:8px; line-height:1; }
   .close:hover { color:#fff; }
 
@@ -210,58 +214,80 @@ function opponentsOf(c) {
 
 function pairKey(a, b) { return a < b ? `${a}__${b}` : `${b}__${a}`; }
 
+function renderDirect(c1, c2) {
+  const { matches } = DATA;
+  const list = matches[pairKey(c1, c2)] || [];
+  const thead = document.getElementById('modal-head');
+  const tbody = document.getElementById('modal-body');
+  thead.innerHTML = '<tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th></th></tr>';
+  tbody.innerHTML = list.map(m => `
+    <tr>
+      <td style="color:#888;white-space:nowrap">${m.date}</td>
+      <td><div class="team-cell">${flag(m.hc,13)}<span>${m.home}</span></div></td>
+      <td><div class="team-cell">${flag(m.ac,13)}<span>${m.away}</span></div></td>
+      <td><b style="white-space:nowrap">${m.result}</b></td>
+      <td><span class="comp-badge ${m.comp}">${m.comp}</span></td>
+    </tr>`).join('');
+  document.querySelectorAll('.modal-tab').forEach(b => b.classList.remove('active'));
+  const t = document.getElementById('tab-direct');
+  if (t) t.classList.add('active');
+}
+
+function renderCommon(c1, c2) {
+  const { matches, names } = DATA;
+  const opp1 = new Set(opponentsOf(c1));
+  const opp2 = new Set(opponentsOf(c2));
+  const common = [...opp1].filter(c => opp2.has(c));
+  common.sort((a, b) => {
+    const na = (matches[pairKey(a,c1)]||[]).length + (matches[pairKey(a,c2)]||[]).length;
+    const nb = (matches[pairKey(b,c1)]||[]).length + (matches[pairKey(b,c2)]||[]).length;
+    return nb - na;
+  });
+  const thead = document.getElementById('modal-head');
+  const tbody = document.getElementById('modal-body');
+  thead.innerHTML = `<tr>
+    <th>Adversaire commun</th>
+    <th>${flag(c1,12)} ${names[c1]||c1}</th>
+    <th>${flag(c2,12)} ${names[c2]||c2}</th>
+  </tr>`;
+  const fmtMatches = (ms) => ms.length === 0 ? '<span style="color:#444">—</span>' :
+    ms.map(m => `<span style="display:inline-block;font-size:11px;color:#bbb;line-height:1.4">${m.date.slice(0,7)} <b>${m.result}</b><br><span style="font-size:10px;color:#666">${m.home} – ${m.away}</span></span>`).join('<br>');
+  tbody.innerHTML = common.length === 0
+    ? `<tr><td colspan="3" style="color:#555;padding:16px;text-align:center">Aucun adversaire commun</td></tr>`
+    : common.map(c => `
+      <tr>
+        <td><div class="team-cell">${flag(c,14)}<span>${names[c]||c}</span></div></td>
+        <td>${fmtMatches(matches[pairKey(c,c1)]||[])}</td>
+        <td>${fmtMatches(matches[pairKey(c,c2)]||[])}</td>
+      </tr>`).join('');
+  document.querySelectorAll('.modal-tab').forEach(b => b.classList.remove('active'));
+  const t = document.getElementById('tab-common');
+  if (t) t.classList.add('active');
+}
+
 function showMatches(c1, c2) {
   const { matches, names } = DATA;
-  const key = pairKey(c1, c2);
-  const list = matches[key] || [];
+  const list = matches[pairKey(c1, c2)] || [];
 
   document.getElementById('modal-flags').innerHTML =
     `${flag(c1,20)} <span style="color:#555;font-size:1.1rem">vs</span> ${flag(c2,20)}`;
   document.getElementById('modal-title').textContent =
     `${names[c1]||c1}  vs  ${names[c2]||c2}`;
 
-  const tbody = document.getElementById('modal-body');
-  const thead = document.getElementById('modal-head');
+  const opp1 = new Set(opponentsOf(c1));
+  const opp2 = new Set(opponentsOf(c2));
+  const commonCount = [...opp1].filter(c => opp2.has(c)).length;
+  const countEl = document.getElementById('modal-count');
 
   if (list.length > 0) {
-    document.getElementById('modal-count').textContent =
-      `${list.length} match${list.length>1?'s':''}`;
-    thead.innerHTML = '<tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th></th></tr>';
-    tbody.innerHTML = list.map(m => `
-      <tr>
-        <td style="color:#888;white-space:nowrap">${m.date}</td>
-        <td><div class="team-cell">${flag(m.hc,13)}<span>${m.home}</span></div></td>
-        <td><div class="team-cell">${flag(m.ac,13)}<span>${m.away}</span></div></td>
-        <td><b style="white-space:nowrap">${m.result}</b></td>
-        <td><span class="comp-badge ${m.comp}">${m.comp}</span></td>
-      </tr>`).join('');
+    countEl.innerHTML =
+      `<button class="modal-tab active" id="tab-direct" onclick="renderDirect('${c1}','${c2}')">Matchs directs (${list.length})</button>` +
+      `<button class="modal-tab" id="tab-common" onclick="renderCommon('${c1}','${c2}')">Adversaires communs (${commonCount})</button>`;
+    renderDirect(c1, c2);
   } else {
-    // Common opponents mode
-    const opp1 = new Set(opponentsOf(c1));
-    const opp2 = new Set(opponentsOf(c2));
-    const common = [...opp1].filter(c => opp2.has(c));
-    common.sort((a, b) => {
-      const na = (matches[pairKey(a,c1)]||[]).length + (matches[pairKey(a,c2)]||[]).length;
-      const nb = (matches[pairKey(b,c1)]||[]).length + (matches[pairKey(b,c2)]||[]).length;
-      return nb - na;
-    });
-    document.getElementById('modal-count').textContent =
-      `0 match direct · ${common.length} adversaire${common.length!==1?'s':''} commun${common.length!==1?'s':''}`;
-    thead.innerHTML = `<tr>
-      <th>Adversaire commun</th>
-      <th>${flag(c1,12)} ${names[c1]||c1}</th>
-      <th>${flag(c2,12)} ${names[c2]||c2}</th>
-    </tr>`;
-    const fmtMatches = (ms) => ms.length === 0 ? '<span style="color:#444">—</span>' :
-      ms.map(m => `<span style="display:inline-block;font-size:11px;color:#bbb;line-height:1.4">${m.date.slice(0,7)} <b>${m.result}</b><br><span style="font-size:10px;color:#666">${m.home} – ${m.away}</span></span>`).join('<br>');
-    tbody.innerHTML = common.length === 0
-      ? `<tr><td colspan="3" style="color:#555;padding:16px;text-align:center">Aucun adversaire commun</td></tr>`
-      : common.map(c => `
-        <tr>
-          <td><div class="team-cell">${flag(c,14)}<span>${names[c]||c}</span></div></td>
-          <td>${fmtMatches(matches[pairKey(c,c1)]||[])}</td>
-          <td>${fmtMatches(matches[pairKey(c,c2)]||[])}</td>
-        </tr>`).join('');
+    countEl.textContent =
+      `0 match direct · ${commonCount} adversaire${commonCount!==1?'s':''} commun${commonCount!==1?'s':''}`;
+    renderCommon(c1, c2);
   }
 
   document.getElementById('overlay').style.display = 'block';

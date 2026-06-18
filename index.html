@@ -126,7 +126,7 @@
     <span class="close" onclick="closeModal()">&#x2715;</span>
   </div>
   <table class="matches">
-    <thead><tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th></th></tr></thead>
+    <thead id="modal-head"><tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th></th></tr></thead>
     <tbody id="modal-body"></tbody>
   </table>
 </div>
@@ -202,27 +202,67 @@ function buildMatrix() {
   });
 }
 
+function opponentsOf(c) {
+  return Object.keys(DATA.matches)
+    .filter(k => k.startsWith(c+'__') || k.endsWith('__'+c))
+    .map(k => k.startsWith(c+'__') ? k.slice(c.length+2) : k.slice(0, k.indexOf('__')));
+}
+
+function pairKey(a, b) { return a < b ? `${a}__${b}` : `${b}__${a}`; }
+
 function showMatches(c1, c2) {
   const { matches, names } = DATA;
-  const key = c1 < c2 ? `${c1}__${c2}` : `${c2}__${c1}`;
+  const key = pairKey(c1, c2);
   const list = matches[key] || [];
 
   document.getElementById('modal-flags').innerHTML =
     `${flag(c1,20)} <span style="color:#555;font-size:1.1rem">vs</span> ${flag(c2,20)}`;
   document.getElementById('modal-title').textContent =
     `${names[c1]||c1}  vs  ${names[c2]||c2}`;
-  document.getElementById('modal-count').textContent =
-    `${list.length} match${list.length>1?'s':''}`;
 
   const tbody = document.getElementById('modal-body');
-  tbody.innerHTML = list.map(m => `
-    <tr>
-      <td style="color:#888;white-space:nowrap">${m.date}</td>
-      <td><div class="team-cell">${flag(m.hc,13)}<span>${m.home}</span></div></td>
-      <td><div class="team-cell">${flag(m.ac,13)}<span>${m.away}</span></div></td>
-      <td><b style="white-space:nowrap">${m.result}</b></td>
-      <td><span class="comp-badge ${m.comp}">${m.comp}</span></td>
-    </tr>`).join('');
+  const thead = document.getElementById('modal-head');
+
+  if (list.length > 0) {
+    document.getElementById('modal-count').textContent =
+      `${list.length} match${list.length>1?'s':''}`;
+    thead.innerHTML = '<tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th></th></tr>';
+    tbody.innerHTML = list.map(m => `
+      <tr>
+        <td style="color:#888;white-space:nowrap">${m.date}</td>
+        <td><div class="team-cell">${flag(m.hc,13)}<span>${m.home}</span></div></td>
+        <td><div class="team-cell">${flag(m.ac,13)}<span>${m.away}</span></div></td>
+        <td><b style="white-space:nowrap">${m.result}</b></td>
+        <td><span class="comp-badge ${m.comp}">${m.comp}</span></td>
+      </tr>`).join('');
+  } else {
+    // Common opponents mode
+    const opp1 = new Set(opponentsOf(c1));
+    const opp2 = new Set(opponentsOf(c2));
+    const common = [...opp1].filter(c => opp2.has(c));
+    common.sort((a, b) => {
+      const na = (matches[pairKey(a,c1)]||[]).length + (matches[pairKey(a,c2)]||[]).length;
+      const nb = (matches[pairKey(b,c1)]||[]).length + (matches[pairKey(b,c2)]||[]).length;
+      return nb - na;
+    });
+    document.getElementById('modal-count').textContent =
+      `0 match direct · ${common.length} adversaire${common.length!==1?'s':''} commun${common.length!==1?'s':''}`;
+    thead.innerHTML = `<tr>
+      <th>Adversaire commun</th>
+      <th>${flag(c1,12)} ${names[c1]||c1}</th>
+      <th>${flag(c2,12)} ${names[c2]||c2}</th>
+    </tr>`;
+    const fmtMatches = (ms) => ms.length === 0 ? '<span style="color:#444">—</span>' :
+      ms.map(m => `<span style="white-space:nowrap;font-size:11px;color:#bbb">${m.date.slice(0,7)} <b>${m.result}</b></span>`).join('<br>');
+    tbody.innerHTML = common.length === 0
+      ? `<tr><td colspan="3" style="color:#555;padding:16px;text-align:center">Aucun adversaire commun</td></tr>`
+      : common.map(c => `
+        <tr>
+          <td><div class="team-cell">${flag(c,14)}<span>${names[c]||c}</span></div></td>
+          <td>${fmtMatches(matches[pairKey(c,c1)]||[])}</td>
+          <td>${fmtMatches(matches[pairKey(c,c2)]||[])}</td>
+        </tr>`).join('');
+  }
 
   document.getElementById('overlay').style.display = 'block';
   document.getElementById('modal').style.display = 'block';

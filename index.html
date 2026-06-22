@@ -62,34 +62,59 @@ th, td {
 /* ========== APP TABS ========== */
 .app-tabs {
   display: flex;
-  gap: 4px;
-  padding: 10px 12px 0;
-  border-bottom: 1px solid #2e2e50;
-  background: #0f1117;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: #13142a;
+  border-bottom: 1px solid #1e1e3a;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.5);
   position: sticky;
   top: 0;
   z-index: 50;
 }
 
+.app-brand {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #8ab4ff;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.app-nav {
+  display: flex;
+  gap: 4px;
+  background: #0d0e1e;
+  border: 1px solid #2a2a48;
+  border-radius: 10px;
+  padding: 4px;
+}
+
 .app-tab {
   background: transparent;
   border: none;
-  border-bottom: 2px solid transparent;
-  color: #7888b0;
+  border-radius: 7px;
+  color: #6a7a9e;
   cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 8px 18px 10px;
-  transition: color 0.15s, border-color 0.15s;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 9px 26px;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .app-tab:hover {
   color: #c0caef;
+  background: #1a1c34;
 }
 
 .app-tab.active {
-  color: #6ab0ff;
-  border-bottom-color: #6ab0ff;
+  background: #1c3270;
+  color: #7ec8ff;
+  box-shadow: 0 1px 8px rgba(28,50,112,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
 /* ========== APP SECTIONS ========== */
@@ -600,8 +625,11 @@ table.matches tr:hover td {
 
 <!-- APP TABS -->
 <div class="app-tabs">
-  <button class="app-tab active" id="app-tab-matrix" onclick="switchAppTab('matrix')">Matrice</button>
-  <button class="app-tab" id="app-tab-clubelo" onclick="switchAppTab('clubelo')">Club Elo</button>
+  <span class="app-brand">&#9917; Europe 26/27</span>
+  <div class="app-nav">
+    <button class="app-tab active" id="app-tab-matrix" onclick="switchAppTab('matrix')">&#9726; Matrice</button>
+    <button class="app-tab" id="app-tab-clubelo" onclick="switchAppTab('clubelo')">&#9733; Club Elo</button>
+  </div>
 </div>
 
 <!-- ===== MATRICE SECTION ===== -->

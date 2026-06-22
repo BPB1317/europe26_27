@@ -804,7 +804,14 @@ function showCountryMatches(c) {
     var oppCC = isHome ? m.ac : m.hc;
     var oppName = isHome ? m.away : m.home;
     var myName = isHome ? m.home : m.away;
-    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(c, 13) + ' ' + myName + ' vs ' + flag(oppCC, 13) + ' ' + oppName + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+    var myElo = 0, oppElo = 0;
+    for (var j = 0; j < DATA.clubs.length; j++) {
+      if (DATA.clubs[j].name === myName) myElo = DATA.clubs[j].elo;
+      if (DATA.clubs[j].name === oppName) oppElo = DATA.clubs[j].elo;
+    }
+    var myEloStr  = myElo  ? ' <span style="font-size:0.65rem;color:#5a6a90">' + myElo  + '</span>' : '';
+    var oppEloStr = oppElo ? ' <span style="font-size:0.65rem;color:#5a6a90">' + oppElo + '</span>' : '';
+    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(c, 13) + ' ' + myName + myEloStr + ' vs ' + flag(oppCC, 13) + ' ' + oppName + oppEloStr + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
   });
   html += '</tbody></table>';
 

@@ -1257,9 +1257,17 @@ function renderClubEloTable() {
     var eloCell = editMode
       ? '<td><input type="number" class="elo-input" value="' + c.elo + '" data-club="' + safeClub + '" onblur="saveClubEloFromInput(this)" onkeydown="if(event.key===\'Enter\')this.blur()"></td>'
       : '<td style="color:' + color + ';font-weight:600">' + c.elo + '</td>';
+    var dateStr = '';
+    if (c.updated_at) {
+      var d = new Date(c.updated_at);
+      var diffDays = (Date.now() - d.getTime()) / 86400000;
+      var label = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: '2-digit' });
+      dateStr = ' <span style="font-size:0.62rem;color:#3a4460;margin-left:4px">' + label + '</span>';
+      if (diffDays <= 30) dateStr += ' <span style="font-size:0.6rem;background:#0e2a18;color:#44cc88;border:1px solid #1a5030;border-radius:3px;padding:0 4px;font-weight:700;vertical-align:middle">new</span>';
+    }
     html += '<tr class="club-row" data-club="' + safeClub + '">' +
       '<td style="color:#5a6a90">' + (i + 1) + '</td>' +
-      '<td class="team-cell">' + c.name + '</td>' +
+      '<td class="team-cell">' + c.name + dateStr + '</td>' +
       '<td>' + flag(c.country, 14) + ' ' + (NAMES[c.country] || c.country) + '</td>' +
       eloCell +
       '<td style="color:#7888b0">' + c.match_log.length + '</td>' +
@@ -1373,9 +1381,9 @@ async function applyBulkElo() {
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
-      body: JSON.stringify({ elo: newElo })
+      body: JSON.stringify({ elo: newElo, updated_at: new Date().toISOString() })
     });
-    if (resp.ok) { club.elo = newElo; } else { errors++; }
+    if (resp.ok) { club.elo = newElo; club.updated_at = new Date().toISOString(); } else { errors++; }
   }
 
   DATA.clubs.sort(function(a, b) { return b.elo - a.elo; });
@@ -1409,10 +1417,13 @@ async function saveClubEloFromInput(input) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal'
     },
-    body: JSON.stringify({ elo: newElo })
+    body: JSON.stringify({ elo: newElo, updated_at: new Date().toISOString() })
   });
   input.classList.remove('error', 'saved');
   if (resp.ok) {
+    for (var i = 0; i < DATA.clubs.length; i++) {
+      if (DATA.clubs[i].name === name) { DATA.clubs[i].updated_at = new Date().toISOString(); break; }
+    }
     input.classList.add('saved');
     setTimeout(function() { input.classList.remove('saved'); }, 1500);
   } else {
@@ -1514,7 +1525,7 @@ async function init() {
       .map(function(c) {
         var log = clubMatchLog[c.name] || [];
         log.sort(function(a, b) { return a.date.localeCompare(b.date); });
-        return { name: c.name, country: c.country_code, elo: c.elo, match_log: log };
+        return { name: c.name, country: c.country_code, elo: c.elo, match_log: log, updated_at: c.updated_at || null };
       });
 
     // update country elo from top club

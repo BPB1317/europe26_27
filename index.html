@@ -551,6 +551,14 @@ table.matches tr:hover td {
   white-space: nowrap;
   font-size: 0.77rem;
 }
+.elo-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+.elo-table th.sortable:hover { color: #c0caef; }
+.elo-table th.sort-active { color: #6ab0ff; }
+.sort-arrow { font-size: 0.65rem; margin-left: 3px; opacity: 0.5; }
+.sort-arrow.on { opacity: 1; color: #6ab0ff; }
 
 .elo-table td {
   padding: 5px 10px;
@@ -728,11 +736,11 @@ table.matches tr:hover td {
       <table class="elo-table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Club</th>
-            <th>Pays</th>
-            <th>Elo</th>
-            <th>Matchs EU</th>
+            <th class="sortable" id="th-rank"    onclick="sortClubs('elo')"     title="Trier par rang">#<span class="sort-arrow on" id="sa-elo2">▼</span></th>
+            <th class="sortable" id="th-name"    onclick="sortClubs('name')"    title="Trier par nom">Club<span class="sort-arrow" id="sa-name">⇅</span></th>
+            <th class="sortable" id="th-country" onclick="sortClubs('country')" title="Trier par pays">Pays<span class="sort-arrow" id="sa-country">⇅</span></th>
+            <th class="sortable sort-active" id="th-elo" onclick="sortClubs('elo')" title="Trier par Elo">Elo<span class="sort-arrow on" id="sa-elo">▼</span></th>
+            <th class="sortable" id="th-matches" onclick="sortClubs('matches')" title="Trier par matchs">Matchs EU<span class="sort-arrow" id="sa-matches">⇅</span></th>
           </tr>
         </thead>
         <tbody id="elo-tbody"></tbody>
@@ -796,9 +804,10 @@ var FLAGCDN = {
   'EST':'ee','ALB':'al','LTU':'lt','AND':'ad','LUX':'lu','MNE':'me','GEO':'ge','SMR':'sm'
 };
 
-// Change this PIN to whatever you want
 var EDIT_PIN = '2302';
 var editMode = false;
+var sortCol = 'elo';
+var sortDir = 'desc';
 
 // ========== DATA STORE ==========
 var DATA = {
@@ -1176,15 +1185,69 @@ function filterClubs() {
   renderClubEloTable();
 }
 
+function sortClubs(col) {
+  if (sortCol === col) {
+    sortDir = sortDir === 'desc' ? 'asc' : 'desc';
+  } else {
+    sortCol = col;
+    sortDir = col === 'name' || col === 'country' ? 'asc' : 'desc';
+  }
+  renderClubEloTable();
+}
+
+function updateSortHeaders() {
+  var cols = ['elo', 'name', 'country', 'matches'];
+  var thMap = { elo: 'th-elo', name: 'th-name', country: 'th-country', matches: 'th-matches' };
+  cols.forEach(function(col) {
+    var th = document.getElementById(thMap[col]);
+    var sa = document.getElementById('sa-' + col);
+    if (!th || !sa) return;
+    if (sortCol === col) {
+      th.classList.add('sort-active');
+      sa.classList.add('on');
+      sa.textContent = sortDir === 'desc' ? '▼' : '▲';
+    } else {
+      th.classList.remove('sort-active');
+      sa.classList.remove('on');
+      sa.textContent = '⇅';
+    }
+  });
+  // sync # column arrow with elo
+  var sa2 = document.getElementById('sa-elo2');
+  var thRank = document.getElementById('th-rank');
+  if (sa2 && thRank) {
+    if (sortCol === 'elo') {
+      thRank.classList.add('sort-active');
+      sa2.classList.add('on');
+      sa2.textContent = sortDir === 'desc' ? '▼' : '▲';
+    } else {
+      thRank.classList.remove('sort-active');
+      sa2.classList.remove('on');
+      sa2.textContent = '⇅';
+    }
+  }
+}
+
 function renderClubEloTable() {
   var textFilter = (document.getElementById('club-filter-text').value || '').toLowerCase();
   var countryFilter = document.getElementById('club-filter-country').value;
 
-  var filtered = DATA.clubs.filter(function(c) {
+  var base = DATA.clubs.slice().sort(function(a, b) {
+    var v;
+    if      (sortCol === 'name')    v = a.name.localeCompare(b.name);
+    else if (sortCol === 'country') v = (UEFA_RANK[a.country] || 99) - (UEFA_RANK[b.country] || 99);
+    else if (sortCol === 'matches') v = a.match_log.length - b.match_log.length;
+    else                            v = a.elo - b.elo;
+    return sortDir === 'desc' ? -v : v;
+  });
+
+  var filtered = base.filter(function(c) {
     if (textFilter && c.name.toLowerCase().indexOf(textFilter) === -1) return false;
     if (countryFilter && c.country !== countryFilter) return false;
     return true;
   });
+
+  updateSortHeaders();
 
   var tbody = document.getElementById('elo-tbody');
   var html = '';

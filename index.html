@@ -1334,6 +1334,33 @@ function initClubTab() {
   renderClubEloTable();
 }
 
+// ========== COUNTRY ELO RECOMPUTE ==========
+
+function recomputeCountryElos() {
+  DATA.countries.forEach(function(cc) {
+    DATA.country_elo[cc] = { elo: DATA.country_base_elo[cc] || 0, top_club: null };
+  });
+  DATA.clubs.forEach(function(c) {
+    if (DATA.country_elo[c.country] && c.elo > DATA.country_elo[c.country].elo) {
+      DATA.country_elo[c.country] = { elo: c.elo, top_club: c.name };
+    }
+  });
+}
+
+function updateMatrixElos() {
+  recomputeCountryElos();
+  document.querySelectorAll('th.col-head').forEach(function(th) {
+    var cc = th.getAttribute('data-col');
+    var span = th.querySelector('.elo-hint');
+    if (span) { var e = DATA.country_elo[cc]; span.textContent = (e && e.elo > 0) ? e.elo : ''; }
+  });
+  document.querySelectorAll('th.row-head').forEach(function(th) {
+    var cc = th.closest('tr').getAttribute('data-row');
+    var span = th.querySelector('.elo-hint');
+    if (span) { var e = DATA.country_elo[cc]; span.textContent = (e && e.elo > 0) ? e.elo : ''; }
+  });
+}
+
 // ========== ELO EDITING ==========
 
 function toggleEditMode() {
@@ -1387,6 +1414,7 @@ async function applyBulkElo() {
   }
 
   DATA.clubs.sort(function(a, b) { return b.elo - a.elo; });
+  updateMatrixElos();
   renderClubEloTable();
 
   if (errors === 0) {
@@ -1424,6 +1452,7 @@ async function saveClubEloFromInput(input) {
     for (var i = 0; i < DATA.clubs.length; i++) {
       if (DATA.clubs[i].name === name) { DATA.clubs[i].updated_at = new Date().toISOString(); break; }
     }
+    updateMatrixElos();
     input.classList.add('saved');
     setTimeout(function() { input.classList.remove('saved'); }, 1500);
   } else {
@@ -1463,12 +1492,14 @@ async function init() {
     DATA.countries = Object.keys(UEFA_RANK).sort(function(a, b) { return UEFA_RANK[a] - UEFA_RANK[b]; });
 
     // country_elo from DB
+    DATA.country_base_elo = {};
     DATA.country_elo = {};
     countriesData.forEach(function(c) {
+      DATA.country_base_elo[c.code] = c.elo;
       DATA.country_elo[c.code] = { elo: c.elo, top_club: null };
     });
     DATA.countries.forEach(function(cc) {
-      if (!DATA.country_elo[cc]) DATA.country_elo[cc] = { elo: 0, top_club: null };
+      if (!DATA.country_elo[cc]) { DATA.country_base_elo[cc] = 0; DATA.country_elo[cc] = { elo: 0, top_club: null }; }
     });
 
     // matches keyed by sorted country pair, sorted by date

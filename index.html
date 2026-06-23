@@ -1189,6 +1189,9 @@ function eloColor(elo) {
 }
 
 function filterClubs() {
+  var countryFilter = document.getElementById('club-filter-country').value;
+  if (countryFilter) { sortCol = 'name'; sortDir = 'asc'; }
+  else { sortCol = 'elo'; sortDir = 'desc'; }
   renderClubEloTable();
 }
 

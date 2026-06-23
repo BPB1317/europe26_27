@@ -527,48 +527,51 @@ table.matches tr:hover td {
 .elo-table-wrap {
   overflow: auto;
   max-height: calc(100vh - 200px);
+  max-width: 680px;
 }
 
 .elo-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
 
 .elo-table thead tr {
-  border-bottom: 2px solid #2e2e50;
+  border-bottom: 1px solid #2a2a48;
   position: sticky;
   top: 0;
-  background: #16172a;
+  background: #13142a;
   z-index: 2;
 }
 
 .elo-table th {
-  color: #7888b0;
+  color: #5a6a8a;
   font-weight: 500;
-  padding: 7px 10px;
+  padding: 5px 8px;
   text-align: left;
   white-space: nowrap;
-  font-size: 0.77rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 .elo-table th.sortable {
   cursor: pointer;
   user-select: none;
 }
-.elo-table th.sortable:hover { color: #c0caef; }
+.elo-table th.sortable:hover { color: #a0b0d0; }
 .elo-table th.sort-active { color: #6ab0ff; }
-.sort-arrow { font-size: 0.65rem; margin-left: 3px; opacity: 0.5; }
+.sort-arrow { font-size: 0.6rem; margin-left: 3px; opacity: 0.4; }
 .sort-arrow.on { opacity: 1; color: #6ab0ff; }
 
 .elo-table td {
-  padding: 5px 10px;
-  border-bottom: 1px solid #1c1d30;
+  padding: 3px 8px;
+  border-bottom: 1px solid #16172a;
   white-space: nowrap;
 }
 
 .club-row {
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.08s;
 }
 
 .elo-toolbar button {
@@ -737,10 +740,10 @@ table.matches tr:hover td {
         <thead>
           <tr>
             <th class="sortable" id="th-rank"    onclick="sortClubs('elo')"     title="Trier par rang">#<span class="sort-arrow on" id="sa-elo2">▼</span></th>
-            <th class="sortable" id="th-name"    onclick="sortClubs('name')"    title="Trier par nom">Club<span class="sort-arrow" id="sa-name">⇅</span></th>
             <th class="sortable" id="th-country" onclick="sortClubs('country')" title="Trier par pays">Pays<span class="sort-arrow" id="sa-country">⇅</span></th>
+            <th class="sortable" id="th-name"    onclick="sortClubs('name')"    title="Trier par nom">Club<span class="sort-arrow" id="sa-name">⇅</span></th>
             <th class="sortable sort-active" id="th-elo" onclick="sortClubs('elo')" title="Trier par Elo">Elo<span class="sort-arrow on" id="sa-elo">▼</span></th>
-            <th class="sortable" id="th-matches" onclick="sortClubs('matches')" title="Trier par matchs">Matchs EU<span class="sort-arrow" id="sa-matches">⇅</span></th>
+            <th class="sortable" id="th-matches" onclick="sortClubs('matches')" title="Trier par matchs">EU<span class="sort-arrow" id="sa-matches">⇅</span></th>
           </tr>
         </thead>
         <tbody id="elo-tbody"></tbody>
@@ -1278,11 +1281,11 @@ function renderClubEloTable() {
       if (diffDays <= 30) dateStr += ' <span style="font-size:0.6rem;background:#0e2a18;color:#44cc88;border:1px solid #1a5030;border-radius:3px;padding:0 4px;font-weight:700;vertical-align:middle">new</span>';
     }
     html += '<tr class="club-row" data-club="' + safeClub + '">' +
-      '<td style="color:#5a6a90">' + (i + 1) + '</td>' +
+      '<td style="color:#3a4460;width:28px;text-align:right">' + (i + 1) + '</td>' +
+      '<td style="width:120px">' + flag(c.country, 12) + ' <span style="font-size:0.72rem;color:#7888b0">' + (NAMES[c.country] || c.country) + '</span></td>' +
       '<td class="team-cell">' + c.name + dateStr + '</td>' +
-      '<td>' + flag(c.country, 14) + ' ' + (NAMES[c.country] || c.country) + '</td>' +
       eloCell +
-      '<td style="color:#7888b0">' + c.match_log.length + '</td>' +
+      '<td style="color:#5a6a90;width:36px;text-align:center">' + c.match_log.length + '</td>' +
       '</tr>';
   });
   tbody.innerHTML = html;

@@ -1247,7 +1247,7 @@ function renderClubEloTable() {
   var base = DATA.clubs.slice().sort(function(a, b) {
     var v;
     if      (activeCol === 'name')    v = a.name.localeCompare(b.name);
-    else if (activeCol === 'country') v = (UEFA_RANK[a.country] || 99) - (UEFA_RANK[b.country] || 99);
+    else if (activeCol === 'country') v = (NAMES[a.country] || a.country).localeCompare(NAMES[b.country] || b.country);
     else if (activeCol === 'matches') v = a.match_log.length - b.match_log.length;
     else                              v = a.elo - b.elo;
     return activeDir === 'desc' ? -v : v;

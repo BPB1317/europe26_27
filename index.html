@@ -905,6 +905,13 @@ function showCountryMatches(c) {
   document.getElementById('overlay').classList.add('open');
 }
 
+function clubEloHint(name) {
+  for (var i = 0; i < DATA.clubs.length; i++) {
+    if (DATA.clubs[i].name === name) return DATA.clubs[i].elo ? ' <span style="font-size:0.65rem;color:#5a6a90">' + DATA.clubs[i].elo + '</span>' : '';
+  }
+  return '';
+}
+
 function renderDirect(c1, c2) {
   var key = pairKey(c1, c2);
   var list = DATA.matches[key] || [];
@@ -913,7 +920,7 @@ function renderDirect(c1, c2) {
   var sorted = list.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
   var html = '<table class="matches"><thead><tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th>Comp.</th></tr></thead><tbody>';
   sorted.forEach(function(m) {
-    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + clubEloHint(m.home) + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + clubEloHint(m.away) + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
   });
   html += '</tbody></table>';
   return html;
@@ -941,7 +948,7 @@ function renderCommon(c1, c2) {
 
     var all = m1.concat(m2).sort(function(a, b) { return b.date.localeCompare(a.date); });
     all.forEach(function(m) {
-      html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+      html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + clubEloHint(m.home) + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + clubEloHint(m.away) + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
     });
     html += '</tbody></table></div>';
   });

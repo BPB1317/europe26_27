@@ -550,7 +550,7 @@ table.matches tr:hover td {
 
 .club-detail-placeholder {
   color: #2e3450;
-  font-size: 0.85rem;
+  font-size: 0.975rem;
   text-align: center;
   padding: 60px 0;
 }
@@ -565,14 +565,14 @@ table.matches tr:hover td {
 }
 
 .club-detail-title {
-  font-size: 0.95rem;
+  font-size: 1.075rem;
   font-weight: 600;
   color: #e8ecff;
   flex: 1;
 }
 
 .club-detail-count {
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: #5a6a90;
 }
 
@@ -584,7 +584,7 @@ table.matches tr:hover td {
 .elo-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: 0.945rem;
 }
 
 .elo-table thead tr {
@@ -601,7 +601,7 @@ table.matches tr:hover td {
   padding: 5px 8px;
   text-align: left;
   white-space: nowrap;
-  font-size: 0.72rem;
+  font-size: 0.845rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
@@ -1341,7 +1341,7 @@ function renderClubEloTable() {
     }
     html += '<tr class="club-row" data-club="' + safeClub + '">' +
       '<td style="color:#3a4460;width:28px;text-align:right">' + (i + 1) + '</td>' +
-      '<td style="width:120px">' + flag(c.country, 12) + ' <span style="font-size:0.72rem;color:#7888b0">' + (NAMES[c.country] || c.country) + '</span></td>' +
+      '<td style="width:120px">' + flag(c.country, 12) + ' <span style="font-size:0.845rem;color:#7888b0">' + (NAMES[c.country] || c.country) + '</span></td>' +
       '<td class="team-cell">' + c.name + dateStr + '</td>' +
       eloCell +
       '<td style="color:#5a6a90;width:36px;text-align:center">' + c.match_log.length + '</td>' +
@@ -1370,7 +1370,7 @@ function showClubMatches(name) {
     '</div>';
 
   if (count === 0) {
-    html += '<div style="color:#3a4460;font-size:0.82rem;padding:20px 0;text-align:center">Aucun match européen enregistré</div>';
+    html += '<div style="color:#3a4460;font-size:0.945rem;padding:20px 0;text-align:center">Aucun match européen enregistré</div>';
   } else {
     html += '<table class="matches"><thead><tr><th>Date</th><th>Adversaire</th><th>D/E</th><th>Score</th><th></th></tr></thead><tbody>';
     sorted.forEach(function(m) {

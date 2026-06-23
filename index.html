@@ -1242,13 +1242,15 @@ function renderClubEloTable() {
   var textFilter = (document.getElementById('club-filter-text').value || '').toLowerCase();
   var countryFilter = document.getElementById('club-filter-country').value;
 
+  var activeCol = countryFilter ? 'name' : sortCol;
+  var activeDir = countryFilter ? 'asc'  : sortDir;
   var base = DATA.clubs.slice().sort(function(a, b) {
     var v;
-    if      (sortCol === 'name')    v = a.name.localeCompare(b.name);
-    else if (sortCol === 'country') v = (UEFA_RANK[a.country] || 99) - (UEFA_RANK[b.country] || 99);
-    else if (sortCol === 'matches') v = a.match_log.length - b.match_log.length;
-    else                            v = a.elo - b.elo;
-    return sortDir === 'desc' ? -v : v;
+    if      (activeCol === 'name')    v = a.name.localeCompare(b.name);
+    else if (activeCol === 'country') v = (UEFA_RANK[a.country] || 99) - (UEFA_RANK[b.country] || 99);
+    else if (activeCol === 'matches') v = a.match_log.length - b.match_log.length;
+    else                              v = a.elo - b.elo;
+    return activeDir === 'desc' ? -v : v;
   });
 
   var filtered = base.filter(function(c) {

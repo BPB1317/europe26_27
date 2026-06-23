@@ -1321,7 +1321,7 @@ function initClubTab() {
   DATA.clubs.forEach(function(c) {
     if (!seen[c.country]) { countriesWithClubs.push(c.country); seen[c.country] = true; }
   });
-  countriesWithClubs.sort(function(a, b) { return (UEFA_RANK[a] || 99) - (UEFA_RANK[b] || 99); });
+  countriesWithClubs.sort(function(a, b) { return (NAMES[a] || a).localeCompare(NAMES[b] || b); });
   var bulkSel = document.getElementById('bulk-country');
   countriesWithClubs.forEach(function(cc) {
     sel.add(new Option((NAMES[cc] || cc) + ' (' + cc + ')', cc));

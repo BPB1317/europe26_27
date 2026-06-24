@@ -912,6 +912,79 @@ var FLAGCDN = {
 
 var EDIT_PIN = '2302';
 var editMode = false;
+
+// ========== NAME HARMONIZATION ==========
+
+function normalizeName(s) {
+  if (!s) return '';
+  return s.normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')   // strip diacritics
+    .toLowerCase()
+    .replace(/[.\-–—]/g, ' ') // dots/dashes → space
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Normalized match name → canonical club name in clubs table
+// Keys are pre-normalized (run through normalizeName)
+var CLUB_ALIASES = {
+  'din minsk':      'Dinamo Minsk',
+  'din tbilisi':    'Dinamo Tbilisi',
+  'din zagreb':     'Dinamo Zagreb',
+  'gnk dinamo':     'Dinamo Zagreb',
+  'dyn kyiv':       'Dynamo Kyiv',
+  'vikingur r':     'Víkingur Reykjavík',
+  'fc copenhagen':  'Copenhagen',
+  'fc ballkani':    'Ballkani',
+  'fc astana':      'Astana',
+  'fk sarajevo':    'Sarajevo',
+  'fk liepaja':     'Liepāja',
+  'fk panevezys':   'Panevėžys',
+  'l red imps':     'Lincoln Red Imps',
+  'tns':            'The New Saints',
+  'connahs q':      "Connah's Quay Nomads",
+  'levadia':        'FCI Levadia',
+  'trnava':         'Spartak Trnava',
+  'plzen':          'Viktoria Plzeň',
+};
+
+// Lookup elo for a team name with 4-level fallback:
+// 1) exact  2) alias  3) normalized exact  4) prefix
+function clubEloLookup(name) {
+  if (!name) return 0;
+  if (DATA.clubs_elo_map[name]) return DATA.clubs_elo_map[name];
+  var norm = normalizeName(name);
+  var canonical = CLUB_ALIASES[norm];
+  if (canonical && DATA.clubs_elo_map[canonical]) return DATA.clubs_elo_map[canonical];
+  var direct = DATA.clubs_elo_norm_map[norm];
+  if (direct) return direct;
+  for (var key in DATA.clubs_elo_norm_map) {
+    if (key.length >= 3 && (key.startsWith(norm + ' ') || norm.startsWith(key + ' '))) {
+      return DATA.clubs_elo_norm_map[key];
+    }
+  }
+  return 0;
+}
+
+// Find match log for a club using the same fallback chain
+function findMatchLog(clubName, clubMatchLog, clubMatchLogNorm) {
+  if (clubMatchLog[clubName]) return clubMatchLog[clubName];
+  var norm = normalizeName(clubName);
+  if (clubMatchLogNorm[norm]) return clubMatchLogNorm[norm];
+  // Reverse alias: find a match key whose alias points to this canonical name
+  for (var alias in CLUB_ALIASES) {
+    if (normalizeName(CLUB_ALIASES[alias]) === norm && clubMatchLogNorm[alias]) {
+      return clubMatchLogNorm[alias];
+    }
+  }
+  // Prefix match
+  for (var kn in clubMatchLogNorm) {
+    if (kn.length >= 3 && (kn.startsWith(norm + ' ') || norm.startsWith(kn + ' '))) {
+      return clubMatchLogNorm[kn];
+    }
+  }
+  return [];
+}
 var sortCol = 'elo';
 var sortDir = 'desc';
 
@@ -998,11 +1071,8 @@ function showCountryMatches(c) {
     var oppCC = isHome ? m.ac : m.hc;
     var oppName = isHome ? m.away : m.home;
     var myName = isHome ? m.home : m.away;
-    var myElo = 0, oppElo = 0;
-    for (var j = 0; j < DATA.clubs.length; j++) {
-      if (DATA.clubs[j].name === myName) myElo = DATA.clubs[j].elo;
-      if (DATA.clubs[j].name === oppName) oppElo = DATA.clubs[j].elo;
-    }
+    var myElo  = clubEloLookup(myName);
+    var oppElo = clubEloLookup(oppName);
     var myEloStr  = myElo  ? ' <span style="font-size:0.65rem;color:#5a6a90">' + myElo  + '</span>' : '';
     var oppEloStr = oppElo ? ' <span style="font-size:0.65rem;color:#5a6a90">' + oppElo + '</span>' : '';
     html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(c, 13) + ' ' + myName + myEloStr + ' vs ' + flag(oppCC, 13) + ' ' + oppName + oppEloStr + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
@@ -1014,7 +1084,7 @@ function showCountryMatches(c) {
 }
 
 function clubEloHint(name) {
-  var e = DATA.clubs_elo_map[name];
+  var e = clubEloLookup(name);
   return e ? ' <span style="font-size:0.65rem;color:#5a6a90">' + e + '</span>' : '';
 }
 
@@ -1548,7 +1618,7 @@ async function applyBulkElo() {
       },
       body: JSON.stringify({ elo: newElo, updated_at: new Date().toISOString() })
     });
-    if (resp.ok) { club.elo = newElo; club.updated_at = new Date().toISOString(); DATA.clubs_elo_map[club.name] = newElo; } else { errors++; }
+    if (resp.ok) { club.elo = newElo; club.updated_at = new Date().toISOString(); DATA.clubs_elo_map[club.name] = newElo; DATA.clubs_elo_norm_map[normalizeName(club.name)] = newElo; } else { errors++; }
   }
 
   DATA.clubs.sort(function(a, b) { return b.elo - a.elo; });
@@ -1576,6 +1646,7 @@ async function saveClubEloFromInput(input) {
     if (DATA.clubs[i].name === name) { DATA.clubs[i].elo = newElo; break; }
   }
   DATA.clubs_elo_map[name] = newElo;
+  DATA.clubs_elo_norm_map[normalizeName(name)] = newElo;
   var resp = await fetch(SUPABASE_URL + '/rest/v1/clubs?name=eq.' + encodeURIComponent(name), {
     method: 'PATCH',
     headers: {
@@ -1740,33 +1811,49 @@ async function init() {
       if (DATA.matrix[c2]) DATA.matrix[c2][c1] = n;
     });
 
-    // clubs + their match logs
+    // clubs + their match logs (with normalized name fallback)
     var clubMatchLog = {};
+    var clubMatchLogNorm = {};
     matchesData.forEach(function(m) {
       [[m.home_team, true], [m.away_team, false]].forEach(function(pair) {
         var name = pair[0], isHome = pair[1];
         if (!clubMatchLog[name]) clubMatchLog[name] = [];
-        clubMatchLog[name].push({
+        var entry = {
           date: m.date,
           opp: isHome ? m.away_team : m.home_team,
           opp_cc: isHome ? m.away_country : m.home_country,
           ha: isHome ? 'D' : 'E',
           result: m.result || '?',
           comp: m.competition
-        });
+        };
+        clubMatchLog[name].push(entry);
+        // Index by normalized name
+        var norm = normalizeName(name);
+        if (!clubMatchLogNorm[norm]) clubMatchLogNorm[norm] = clubMatchLog[name];
+        // Also index by the alias canonical's normalized name
+        var aliasTarget = CLUB_ALIASES[norm];
+        if (aliasTarget) {
+          var aliasNorm = normalizeName(aliasTarget);
+          if (!clubMatchLogNorm[aliasNorm]) clubMatchLogNorm[aliasNorm] = clubMatchLog[name];
+        }
       });
     });
     DATA.clubs = clubsData
       .sort(function(a, b) { return b.elo - a.elo; })
       .map(function(c) {
-        var log = clubMatchLog[c.name] || [];
+        var log = findMatchLog(c.name, clubMatchLog, clubMatchLogNorm);
+        log = log.slice();
         log.sort(function(a, b) { return a.date.localeCompare(b.date); });
         return { name: c.name, country: c.country_code, elo: c.elo, match_log: log, updated_at: c.updated_at || null };
       });
 
-    // build O(1) elo lookup map
+    // build O(1) elo lookup maps (exact + normalized)
     DATA.clubs_elo_map = {};
-    DATA.clubs.forEach(function(c) { DATA.clubs_elo_map[c.name] = c.elo; });
+    DATA.clubs_elo_norm_map = {};
+    DATA.clubs.forEach(function(c) {
+      DATA.clubs_elo_map[c.name] = c.elo;
+      DATA.clubs_elo_norm_map[normalizeName(c.name)] = c.elo;
+    });
 
     // update country elo from top club
     DATA.clubs.forEach(function(c) {

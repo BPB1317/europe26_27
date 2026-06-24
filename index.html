@@ -737,6 +737,46 @@ table.matches tr:hover td {
 }
 .top-elo-input { width: 72px; }
 
+.name-mapping-panel {
+  display: none;
+  background: #13142a;
+  border: 1px solid #1e1e3a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.name-mapping-panel.visible { display: block; }
+.name-mapping-panel h3 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5a6a90;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.nm-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.nm-form input, .nm-form select {
+  flex: 1;
+  min-width: 130px;
+  background: #0f1117;
+  border: 1px solid #2a2f50;
+  color: #b0bfe0;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+}
+.nm-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.nm-table th { color: #3a4460; font-size: 0.72rem; padding: 2px 6px 5px; text-align: left; }
+.nm-table td { padding: 3px 6px; border-bottom: 1px solid #16172a; }
+.nm-del { background: none; border: none; color: #ff6b6b; cursor: pointer; font-size: 1rem; padding: 0 4px; }
+.nm-del:hover { color: #ff9090; }
+
 /* ========== LOADING ========== */
 #loading {
   position: fixed;
@@ -807,6 +847,7 @@ table.matches tr:hover td {
         <option value="">Tous les pays</option>
       </select>
       <button id="btn-top-elo" onclick="toggleTopEloPanel()" style="margin-left:auto">Référence pays</button>
+      <button id="btn-name-mapping" onclick="toggleMappingPanel()">Harmonisation</button>
       <button id="btn-edit-mode" onclick="toggleEditMode()">Modifier les elos</button>
     </div>
 
@@ -820,6 +861,30 @@ table.matches tr:hover td {
         </tr></thead>
         <tbody id="top-elo-tbody"></tbody>
       </table>
+    </div>
+
+    <div id="name-mapping-panel" class="name-mapping-panel">
+      <h3>Harmonisation des noms</h3>
+      <div id="nm-edit-form" class="nm-form" style="display:none">
+        <input type="text" id="nm-match-name" list="nm-match-list" placeholder="Nom dans la matrice&#8230;" autocomplete="off">
+        <datalist id="nm-match-list"></datalist>
+        <span style="color:#5a6a90;flex:0">→</span>
+        <select id="nm-canonical-name">
+          <option value="">— Club référence —</option>
+        </select>
+        <button onclick="addNameMapping()">Ajouter</button>
+        <span id="nm-status" style="font-size:0.8rem;color:#7888b0"></span>
+      </div>
+      <table class="nm-table">
+        <thead><tr>
+          <th>Nom matrice</th>
+          <th>Club référence</th>
+          <th style="text-align:right">Elo</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="nm-tbody"></tbody>
+      </table>
+      <div id="nm-empty" style="color:#5a6a90;font-size:0.82rem;padding:6px 4px">Aucune correspondance enregistrée.</div>
     </div>
 
     <div id="bulk-panel" class="bulk-panel">
@@ -948,8 +1013,11 @@ var CLUB_ALIASES = {
   'plzen':          'Viktoria Plzeň',
 };
 
-// Lookup elo for a team name with 4-level fallback:
-// 1) exact  2) alias  3) normalized exact  4) prefix
+// Words too generic to use for word-containment matching (appear in many clubs or big clubs not in qualifiers)
+var WORD_MATCH_BLACKLIST = {'inter':1,'real':1,'city':1,'united':1,'town':1,'boys':1};
+
+// Lookup elo for a team name with 5-level fallback:
+// 1) exact  2) alias  3) normalized exact  4) prefix  5) word-containment (unique)
 function clubEloLookup(name) {
   if (!name) return 0;
   if (DATA.clubs_elo_map[name]) return DATA.clubs_elo_map[name];
@@ -962,6 +1030,16 @@ function clubEloLookup(name) {
     if (key.length >= 3 && (key.startsWith(norm + ' ') || norm.startsWith(key + ' '))) {
       return DATA.clubs_elo_norm_map[key];
     }
+  }
+  // Level 5: all significant search words must appear as words in exactly ONE club name
+  var searchWords = norm.split(' ').filter(function(w) { return w.length >= 4 && !WORD_MATCH_BLACKLIST[w]; });
+  if (searchWords.length > 0) {
+    var hits = [];
+    for (var wkey in DATA.clubs_elo_norm_map) {
+      var wwords = wkey.split(' ');
+      if (searchWords.every(function(sw) { return wwords.indexOf(sw) >= 0; })) hits.push(wkey);
+    }
+    if (hits.length === 1) return DATA.clubs_elo_norm_map[hits[0]];
   }
   return 0;
 }
@@ -982,6 +1060,16 @@ function findMatchLog(clubName, clubMatchLog, clubMatchLogNorm) {
     if (kn.length >= 3 && (kn.startsWith(norm + ' ') || norm.startsWith(kn + ' '))) {
       return clubMatchLogNorm[kn];
     }
+  }
+  // Level 5: each significant search word independently — return if it uniquely identifies one match key
+  var searchWords5 = norm.split(' ').filter(function(w) { return w.length >= 4 && !WORD_MATCH_BLACKLIST[w]; });
+  for (var si = 0; si < searchWords5.length; si++) {
+    var sw = searchWords5[si];
+    var wHits = [];
+    for (var wk in clubMatchLogNorm) {
+      if (wk.split(' ').indexOf(sw) >= 0) wHits.push(wk);
+    }
+    if (wHits.length === 1) return clubMatchLogNorm[wHits[0]];
   }
   return [];
 }
@@ -1511,6 +1599,21 @@ function initClubTab() {
     bulkSel.add(new Option((NAMES[cc] || cc) + ' (' + cc + ')', cc));
   });
 
+  // Populate name-mapping form selects
+  var nmSel = document.getElementById('nm-canonical-name');
+  var nmDl = document.getElementById('nm-match-list');
+  DATA.clubs
+    .slice()
+    .sort(function(a, b) { return a.name.localeCompare(b.name); })
+    .forEach(function(c) {
+      nmSel.add(new Option(c.name + ' (' + (c.country || '') + ') — ' + c.elo, c.name));
+    });
+  DATA.unresolved_names.forEach(function(n) {
+    var opt = document.createElement('option');
+    opt.value = n;
+    nmDl.appendChild(opt);
+  });
+
   document.getElementById('elo-tbody').addEventListener('click', function(e) {
     if (e.target.tagName === 'INPUT') return;
     var row = e.target.closest('tr.club-row');
@@ -1570,14 +1673,17 @@ function updateMatrixElos() {
 // ========== ELO EDITING ==========
 
 function toggleEditMode() {
+  var nmForm = document.getElementById('nm-edit-form');
   if (editMode) {
     editMode = false;
     document.getElementById('btn-edit-mode').textContent = 'Modifier les elos';
     document.getElementById('btn-edit-mode').classList.remove('active');
     document.getElementById('bulk-panel').classList.remove('visible');
+    if (nmForm) nmForm.style.display = 'none';
     DATA.clubs.sort(function(a, b) { return b.elo - a.elo; });
     renderClubEloTable();
     if (document.getElementById('top-elo-panel').classList.contains('visible')) renderTopEloTable();
+    if (document.getElementById('name-mapping-panel').classList.contains('visible')) renderMappingTable();
     return;
   }
   var pin = window.prompt('PIN :');
@@ -1587,8 +1693,10 @@ function toggleEditMode() {
   document.getElementById('btn-edit-mode').textContent = 'Verrouiller';
   document.getElementById('btn-edit-mode').classList.add('active');
   document.getElementById('bulk-panel').classList.add('visible');
+  if (nmForm) nmForm.style.display = 'flex';
   renderClubEloTable();
   if (document.getElementById('top-elo-panel').classList.contains('visible')) renderTopEloTable();
+  if (document.getElementById('name-mapping-panel').classList.contains('visible')) renderMappingTable();
 }
 
 async function applyBulkElo() {
@@ -1733,6 +1841,85 @@ async function saveCountryTopElo(cc, input) {
   }
 }
 
+// ========== NAME MAPPING ==========
+
+function toggleMappingPanel() {
+  var panel = document.getElementById('name-mapping-panel');
+  var btn = document.getElementById('btn-name-mapping');
+  var visible = panel.classList.toggle('visible');
+  btn.classList.toggle('active', visible);
+  if (visible) renderMappingTable();
+}
+
+function renderMappingTable() {
+  var tbody = document.getElementById('nm-tbody');
+  var empty = document.getElementById('nm-empty');
+  var aliases = DATA.name_aliases || {};
+  var keys = Object.keys(aliases).sort(function(a, b) { return a.localeCompare(b); });
+  if (keys.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  tbody.innerHTML = keys.map(function(matchName) {
+    var canonical = aliases[matchName];
+    var elo = DATA.clubs_elo_map[canonical] || 0;
+    var delBtn = editMode
+      ? '<button class="nm-del" onclick="deleteNameMapping(' + JSON.stringify(matchName) + ')">×</button>'
+      : '';
+    return '<tr><td>' + matchName + '</td><td>' + canonical + '</td>'
+      + '<td style="text-align:right">' + (elo || '—') + '</td><td>' + delBtn + '</td></tr>';
+  }).join('');
+}
+
+async function addNameMapping() {
+  var matchName = document.getElementById('nm-match-name').value.trim();
+  var canonical = document.getElementById('nm-canonical-name').value;
+  var statusEl = document.getElementById('nm-status');
+  if (!matchName || !canonical) { statusEl.textContent = 'Remplir les deux champs.'; return; }
+  statusEl.textContent = 'Enregistrement…';
+  var resp = await fetch(SUPABASE_URL + '/rest/v1/name_aliases?on_conflict=match_name', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify([{ match_name: matchName, canonical_name: canonical }])
+  });
+  if (resp.ok) {
+    CLUB_ALIASES[normalizeName(matchName)] = canonical;
+    DATA.name_aliases[matchName] = canonical;
+    document.getElementById('nm-match-name').value = '';
+    document.getElementById('nm-canonical-name').value = '';
+    statusEl.textContent = 'Enregistré ✓';
+    setTimeout(function() { statusEl.textContent = ''; }, 2000);
+    renderMappingTable();
+  } else {
+    var txt = await resp.text();
+    statusEl.style.color = '#ff6b6b';
+    statusEl.textContent = 'Erreur : ' + txt.slice(0, 80);
+  }
+}
+
+async function deleteNameMapping(matchName) {
+  var resp = await fetch(SUPABASE_URL + '/rest/v1/name_aliases?match_name=eq.' + encodeURIComponent(matchName), {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Prefer': 'return=minimal'
+    }
+  });
+  if (resp.ok) {
+    delete CLUB_ALIASES[normalizeName(matchName)];
+    delete DATA.name_aliases[matchName];
+    renderMappingTable();
+  }
+}
+
 // ========== ASYNC INIT ==========
 
 async function fetchAll(table) {
@@ -1755,11 +1942,20 @@ async function init() {
     var results = await Promise.all([
       fetchAll('countries'),
       fetchAll('clubs'),
-      fetchAll('matches')
+      fetchAll('matches'),
+      fetchAll('name_aliases')
     ]);
     var countriesData = results[0];
     var clubsData = results[1];
     var matchesData = results[2];
+    var aliasesData = results[3];
+
+    // Merge custom name aliases into CLUB_ALIASES (loaded from Supabase)
+    DATA.name_aliases = {};
+    aliasesData.forEach(function(a) {
+      CLUB_ALIASES[normalizeName(a.match_name)] = a.canonical_name;
+      DATA.name_aliases[a.match_name] = a.canonical_name;
+    });
 
     // countries sorted by UEFA_RANK
     DATA.countries = Object.keys(UEFA_RANK).sort(function(a, b) { return UEFA_RANK[a] - UEFA_RANK[b]; });
@@ -1861,6 +2057,14 @@ async function init() {
         DATA.country_elo[c.country] = { elo: c.elo, top_club: c.name };
       }
     });
+
+    // collect match team names that have no elo resolution (for mapping panel datalist)
+    DATA.unresolved_names = [];
+    var seenU = {};
+    Object.keys(clubMatchLog).forEach(function(name) {
+      if (!seenU[name] && clubEloLookup(name) === 0) { seenU[name] = true; DATA.unresolved_names.push(name); }
+    });
+    DATA.unresolved_names.sort();
 
     document.getElementById('loading').style.display = 'none';
     buildMatrix();

@@ -875,6 +875,7 @@ table.matches tr:hover td {
         <button onclick="addNameMapping()">Ajouter</button>
         <span id="nm-status" style="font-size:0.8rem;color:#7888b0"></span>
       </div>
+      <div id="nm-warning" style="display:none;color:#f0a500;font-size:0.8rem;margin:-4px 0 8px;padding:4px 6px;background:rgba(240,165,0,0.08);border-left:3px solid #f0a500;border-radius:2px"></div>
       <table class="nm-table">
         <thead><tr>
           <th>Nom matrice</th>
@@ -1011,6 +1012,8 @@ var CLUB_ALIASES = {
   'levadia':        'FCI Levadia',
   'trnava':         'Spartak Trnava',
   'plzen':          'Viktoria Plzeň',
+  'u craiova':      'Universitatea Craiova',
+  'univ craiova':   'Universitatea Craiova',
 };
 
 // Words too generic to use for word-containment matching (appear in many clubs or big clubs not in qualifiers)
@@ -1614,6 +1617,8 @@ function initClubTab() {
     nmDl.appendChild(opt);
   });
 
+  nmSel.addEventListener('change', function() { checkDuplicateMapping(this.value); });
+
   document.getElementById('elo-tbody').addEventListener('click', function(e) {
     if (e.target.tagName === 'INPUT') return;
     var row = e.target.closest('tr.club-row');
@@ -1843,6 +1848,23 @@ async function saveCountryTopElo(cc, input) {
 
 // ========== NAME MAPPING ==========
 
+function checkDuplicateMapping(canonical) {
+  var warnEl = document.getElementById('nm-warning');
+  if (!warnEl) return;
+  if (!canonical) { warnEl.style.display = 'none'; return; }
+  var existing = Object.keys(DATA.name_aliases || {}).filter(function(k) {
+    return DATA.name_aliases[k] === canonical;
+  });
+  if (existing.length > 0) {
+    warnEl.textContent = '⚠ Attention : ce club a déjà '
+      + (existing.length === 1 ? 'une correspondance' : existing.length + ' correspondances')
+      + ' (' + existing.join(', ') + '). Associer plusieurs noms à un même club est inhabituel — vérifier qu\'il ne s\'agit pas d\'une erreur.';
+    warnEl.style.display = '';
+  } else {
+    warnEl.style.display = 'none';
+  }
+}
+
 function toggleMappingPanel() {
   var panel = document.getElementById('name-mapping-panel');
   var btn = document.getElementById('btn-name-mapping');
@@ -1894,6 +1916,7 @@ async function addNameMapping() {
     DATA.name_aliases[matchName] = canonical;
     document.getElementById('nm-match-name').value = '';
     document.getElementById('nm-canonical-name').value = '';
+    checkDuplicateMapping('');
     statusEl.textContent = 'Enregistré ✓';
     setTimeout(function() { statusEl.textContent = ''; }, 2000);
     renderMappingTable();

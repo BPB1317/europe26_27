@@ -541,11 +541,84 @@ table.matches tr:hover td {
   position: sticky;
   top: 66px;
   max-height: calc(100vh - 80px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: #13142a;
   border: 1px solid #1e1e3a;
   border-radius: 8px;
+  overflow: hidden;
+}
+#club-detail-content {
+  flex: 1;
+  overflow-y: auto;
   padding: 12px 14px;
+  min-height: 0;
+}
+.proba-calc {
+  flex: 0 0 auto;
+  border-top: 1px solid #181c34;
+  padding: 10px 14px 12px;
+  background: #11122a;
+}
+.proba-calc-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #3a4460;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 8px;
+}
+.proba-selects {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.proba-selects select {
+  flex: 1;
+  background: #0f1117;
+  border: 1px solid #2a2f50;
+  color: #b0bfe0;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  min-width: 0;
+  cursor: pointer;
+}
+.proba-vs { color: #3a4460; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
+.proba-odds-row { display: flex; gap: 6px; margin-top: 10px; }
+.proba-odd-box {
+  flex: 1;
+  text-align: center;
+  background: #0f1117;
+  border: 1px solid #1e2040;
+  border-radius: 6px;
+  padding: 7px 4px 5px;
+}
+.proba-odd-box.fav {
+  border-color: #2a4080;
+  background: rgba(28,50,112,0.35);
+}
+.proba-odd-val {
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: #c8d6f0;
+  line-height: 1;
+}
+.proba-odd-box.fav .proba-odd-val { color: #6ab0ff; }
+.proba-odd-label {
+  font-size: 0.64rem;
+  color: #3a4460;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+}
+.proba-elo-hint {
+  font-size: 0.65rem;
+  color: #2a3460;
+  text-align: center;
+  margin-top: 6px;
 }
 
 .club-detail-placeholder {
@@ -1074,7 +1147,22 @@ table.matches tr:hover td {
       </div>
 
       <div class="club-detail-panel" id="club-detail-panel">
-        <div class="club-detail-placeholder">&#8592; Cliquer sur un club</div>
+        <div id="club-detail-content">
+          <div class="club-detail-placeholder">&#8592; Cliquer sur un club</div>
+        </div>
+        <div class="proba-calc" id="proba-calc">
+          <div class="proba-calc-title">&#9883; Probabilités</div>
+          <div class="proba-selects">
+            <select id="proba-sel-a" onchange="renderProbaResult()">
+              <option value="">— Team A —</option>
+            </select>
+            <span class="proba-vs">vs</span>
+            <select id="proba-sel-b" onchange="renderProbaResult()">
+              <option value="">— Team B —</option>
+            </select>
+          </div>
+          <div id="proba-result"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1775,7 +1863,7 @@ function showClubMatches(name) {
     html += '</tbody></table>';
   }
 
-  document.getElementById('club-detail-panel').innerHTML = html;
+  document.getElementById('club-detail-content').innerHTML = html;
 }
 
 function initClubTab() {
@@ -1808,6 +1896,14 @@ function initClubTab() {
   });
 
   nmSel.addEventListener('change', function() { checkDuplicateMapping(this.value); });
+
+  // Populate proba calculator selects (sorted by elo desc)
+  ['proba-sel-a', 'proba-sel-b'].forEach(function(selId) {
+    var ps = document.getElementById(selId);
+    DATA.clubs.forEach(function(c) {
+      ps.add(new Option(c.name + ' (' + c.elo + ')', c.name));
+    });
+  });
 
   document.getElementById('elo-tbody').addEventListener('click', function(e) {
     if (e.target.tagName === 'INPUT') return;
@@ -2034,6 +2130,63 @@ async function saveCountryTopElo(cc, input) {
   } else {
     input.classList.add('error');
   }
+}
+
+// ========== PROBA CALCULATOR ==========
+
+function _drawOdds(diff) {
+  if (diff < 100)  return 3.30;
+  if (diff < 150)  return 3.70;
+  if (diff < 225)  return 4.30;
+  if (diff < 300)  return 5.00;
+  return 7.00;
+}
+
+function renderProbaResult() {
+  var nameA = document.getElementById('proba-sel-a').value;
+  var nameB = document.getElementById('proba-sel-b').value;
+  var res   = document.getElementById('proba-result');
+  if (!nameA || !nameB) { res.innerHTML = ''; return; }
+  if (nameA === nameB)  { res.innerHTML = ''; return; }
+
+  var eloA = DATA.clubs_elo_map[nameA] || 0;
+  var eloB = DATA.clubs_elo_map[nameB] || 0;
+  if (!eloA || !eloB) {
+    res.innerHTML = '<div style="color:#ff6b6b;font-size:0.76rem;margin-top:8px">Elo manquant pour un des clubs.</div>';
+    return;
+  }
+
+  var diff     = Math.abs(eloA - eloB);
+  var drawOdd  = _drawOdds(diff);
+  var pDraw    = 1 / drawOdd;
+  var pAbasic  = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
+  var pAwin    = (1 - pDraw) * pAbasic;
+  var pBwin    = (1 - pDraw) * (1 - pAbasic);
+  var oddA     = (1 / pAwin).toFixed(2);
+  var oddB     = (1 / pBwin).toFixed(2);
+  var oddD     = drawOdd.toFixed(2);
+
+  var favA = pAwin > pBwin;
+  var favB = pBwin > pAwin;
+  var shortA = nameA.length > 14 ? nameA.slice(0, 13) + '…' : nameA;
+  var shortB = nameB.length > 14 ? nameB.slice(0, 13) + '…' : nameB;
+
+  res.innerHTML =
+    '<div class="proba-odds-row">'
+    + '<div class="proba-odd-box' + (favA ? ' fav' : '') + '">'
+    +   '<div class="proba-odd-val">' + oddA + '</div>'
+    +   '<div class="proba-odd-label">' + shortA + '</div>'
+    + '</div>'
+    + '<div class="proba-odd-box">'
+    +   '<div class="proba-odd-val" style="color:#7888b0">' + oddD + '</div>'
+    +   '<div class="proba-odd-label">Nul</div>'
+    + '</div>'
+    + '<div class="proba-odd-box' + (favB ? ' fav' : '') + '">'
+    +   '<div class="proba-odd-val">' + oddB + '</div>'
+    +   '<div class="proba-odd-label">' + shortB + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div class="proba-elo-hint">Elo ' + eloA + ' &ndash; diff ' + diff + ' &ndash; Elo ' + eloB + '</div>';
 }
 
 // ========== NOTES (localStorage, per-browser) ==========

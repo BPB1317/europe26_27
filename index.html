@@ -1608,7 +1608,7 @@ function initClubTab() {
     .forEach(function(c) {
       nmSel.add(new Option(c.name + ' (' + (c.country || '') + ') — ' + c.elo, c.name));
     });
-  DATA.unresolved_names.forEach(function(n) {
+  DATA.all_match_names.forEach(function(n) {
     var opt = document.createElement('option');
     opt.value = n;
     nmDl.appendChild(opt);
@@ -2058,13 +2058,8 @@ async function init() {
       }
     });
 
-    // collect match team names that have no elo resolution (for mapping panel datalist)
-    DATA.unresolved_names = [];
-    var seenU = {};
-    Object.keys(clubMatchLog).forEach(function(name) {
-      if (!seenU[name] && clubEloLookup(name) === 0) { seenU[name] = true; DATA.unresolved_names.push(name); }
-    });
-    DATA.unresolved_names.sort();
+    // all unique match team names, sorted (for mapping panel datalist)
+    DATA.all_match_names = Object.keys(clubMatchLog).sort();
 
     document.getElementById('loading').style.display = 'none';
     buildMatrix();

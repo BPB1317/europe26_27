@@ -818,8 +818,26 @@ table.matches tr:hover td {
   flex-direction: column;
   gap: 0;
   transition: border-color 0.2s;
+  position: relative;
 }
 .note-card:focus-within { border-color: #2a3868; }
+.note-expand-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #2a3460;
+  cursor: pointer;
+  font-size: 0.82rem;
+  padding: 2px 5px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  line-height: 1;
+}
+.note-card:hover .note-expand-btn { opacity: 1; }
+.note-expand-btn:hover { color: #6ab0ff; opacity: 1 !important; }
 .note-title-inp {
   background: none;
   border: none;
@@ -827,6 +845,7 @@ table.matches tr:hover td {
   font-size: 0.88rem;
   font-weight: 600;
   padding: 0;
+  padding-right: 26px;
   width: 100%;
   outline: none;
   font-family: inherit;
@@ -872,6 +891,49 @@ table.matches tr:hover td {
   font-size: 0.88rem;
   padding: 60px 0;
 }
+#note-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+#note-modal-overlay.open { display: flex; }
+#note-modal {
+  background: #13142a;
+  border: 1px solid #2a3868;
+  border-radius: 14px;
+  width: min(940px, 92vw);
+  height: min(720px, 88vh);
+  display: flex;
+  flex-direction: column;
+  padding: 22px 28px;
+  box-shadow: 0 12px 50px rgba(0,0,0,0.7);
+}
+.note-modal-titlebar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+#note-modal-title-inp {
+  background: none; border: none; color: #c8d6f0; font-size: 1.08rem;
+  font-weight: 700; outline: none; flex: 1; font-family: inherit; min-width: 0;
+}
+#note-modal-title-inp::placeholder { color: #2a3460; }
+.note-modal-close {
+  background: none; border: none; color: #5a6a90; font-size: 1.5rem;
+  cursor: pointer; line-height: 1; padding: 0 4px; flex-shrink: 0; transition: color 0.15s;
+}
+.note-modal-close:hover { color: #c0caef; }
+#note-modal-content-inp {
+  flex: 1; background: none; border: none; color: #8898c0; font-size: 0.9rem;
+  line-height: 1.8; resize: none; outline: none; font-family: inherit; min-height: 0;
+}
+#note-modal-content-inp::placeholder { color: #2a3460; }
+.note-modal-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid #1a1e38;
+}
+.note-modal-del { background: none; border: none; color: #3a4460; cursor: pointer; font-size: 0.78rem; padding: 3px 6px; border-radius: 4px; transition: color 0.15s; }
+.note-modal-del:hover { color: #ff6b6b; }
 
 /* ========== LOADING ========== */
 #loading {
@@ -1027,6 +1089,22 @@ table.matches tr:hover td {
     </div>
     <div class="notes-grid" id="notes-grid">
       <div class="notes-empty">Aucune note — cliquez sur &laquo;&nbsp;+ Nouvelle note&nbsp;&raquo; pour commencer.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOTE EXPANDED MODAL ===== -->
+<div id="note-modal-overlay" onclick="closeNoteModal()">
+  <div id="note-modal" onclick="event.stopPropagation()">
+    <div class="note-modal-titlebar">
+      <input id="note-modal-title-inp" type="text" placeholder="Titre…" oninput="updateNoteModal('title',this.value)">
+      <button class="note-modal-close" onclick="closeNoteModal()" title="Fermer (Échap)">&#215;</button>
+    </div>
+    <hr style="border:none;border-top:1px solid #1a1e38;margin:0 0 14px">
+    <textarea id="note-modal-content-inp" placeholder="Contenu…" oninput="updateNoteModal('content',this.value)"></textarea>
+    <div class="note-modal-footer">
+      <span id="note-modal-date" style="font-size:0.7rem;color:#2a3460"></span>
+      <button class="note-modal-del" onclick="deleteNoteFromModal()">Supprimer cette note</button>
     </div>
   </div>
 </div>
@@ -1987,6 +2065,7 @@ function renderNotes() {
   }
   grid.innerHTML = notes.map(function(n) {
     return '<div class="note-card" data-nid="' + n.id + '">'
+      + '<button class="note-expand-btn" onclick="openNoteModal(' + n.id + ')" title="Agrandir">&#8599;</button>'
       + '<input class="note-title-inp" type="text" placeholder="Titre…" value="' + _esc(n.title) + '" oninput="updateNote(' + n.id + ',\'title\',this.value)">'
       + '<hr class="note-sep">'
       + '<textarea class="note-content-inp" placeholder="Contenu…" oninput="updateNote(' + n.id + ',\'content\',this.value)">' + _esc(n.content) + '</textarea>'
@@ -2023,6 +2102,43 @@ function deleteNote(id) {
   _saveNotes(_loadNotes().filter(function(n) { return n.id !== id; }));
   renderNotes();
 }
+
+var currentNoteId = null;
+
+function openNoteModal(id) {
+  var notes = _loadNotes();
+  var note = notes.find(function(n) { return n.id === id; });
+  if (!note) return;
+  currentNoteId = id;
+  document.getElementById('note-modal-title-inp').value = note.title || '';
+  document.getElementById('note-modal-content-inp').value = note.content || '';
+  document.getElementById('note-modal-date').textContent = _fmtDate(note.updated_at);
+  document.getElementById('note-modal-overlay').classList.add('open');
+  document.getElementById('note-modal-content-inp').focus();
+}
+
+function closeNoteModal() {
+  document.getElementById('note-modal-overlay').classList.remove('open');
+  currentNoteId = null;
+  renderNotes();
+}
+
+function updateNoteModal(field, value) {
+  if (!currentNoteId) return;
+  updateNote(currentNoteId, field, value);
+  document.getElementById('note-modal-date').textContent = _fmtDate(new Date().toISOString());
+}
+
+function deleteNoteFromModal() {
+  if (!currentNoteId) return;
+  if (!confirm('Supprimer cette note ?')) return;
+  _saveNotes(_loadNotes().filter(function(n) { return n.id !== currentNoteId; }));
+  closeNoteModal();
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && currentNoteId) closeNoteModal();
+});
 
 // ========== NAME MAPPING ==========
 

@@ -566,8 +566,43 @@ table.matches tr:hover td {
   color: #3a4460;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+.proba-hfa-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: #2a6040;
+  background: rgba(50,180,100,0.12);
+  border: 1px solid rgba(50,180,100,0.25);
+  border-radius: 3px;
+  padding: 1px 4px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.proba-team-labels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: #3a4460;
+  margin-bottom: 3px;
+  padding: 0 1px;
+}
+.proba-swap {
+  background: none;
+  border: 1px solid #2a2f50;
+  border-radius: 4px;
+  color: #5a6a90;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 1px 6px;
+  transition: all 0.15s;
+  line-height: 1.4;
+}
+.proba-swap:hover { border-color: #6ab0ff; color: #6ab0ff; }
 .proba-selects {
   display: flex;
   gap: 6px;
@@ -1151,14 +1186,19 @@ table.matches tr:hover td {
           <div class="club-detail-placeholder">&#8592; Cliquer sur un club</div>
         </div>
         <div class="proba-calc" id="proba-calc">
-          <div class="proba-calc-title">&#9883; Probabilités</div>
+          <div class="proba-calc-title">Probabilités <span class="proba-hfa-badge">+ HFA</span></div>
+          <div class="proba-team-labels">
+            <span>&#127968; Domicile</span>
+            <button class="proba-swap" onclick="swapProbaTeams()" title="Inverser domicile / extérieur">&#8644;</button>
+            <span>&#9992; Extérieur</span>
+          </div>
           <div class="proba-selects">
             <select id="proba-sel-a" onchange="renderProbaResult()">
-              <option value="">— Team A —</option>
+              <option value="">— Club —</option>
             </select>
             <span class="proba-vs">vs</span>
             <select id="proba-sel-b" onchange="renderProbaResult()">
-              <option value="">— Team B —</option>
+              <option value="">— Club —</option>
             </select>
           </div>
           <div id="proba-result"></div>
@@ -2156,18 +2196,22 @@ function renderProbaResult() {
     return;
   }
 
-  var diff     = Math.abs(eloA - eloB);
-  var drawOdd  = _drawOdds(diff);
-  var pDraw    = 1 / drawOdd;
-  var pAbasic  = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
-  var pAwin    = (1 - pDraw) * pAbasic;
-  var pBwin    = (1 - pDraw) * (1 - pAbasic);
-  var oddA     = (1 / pAwin).toFixed(2);
-  var oddB     = (1 / pBwin).toFixed(2);
-  var oddD     = drawOdd.toFixed(2);
+  var diff    = Math.abs(eloA - eloB);
+  var drawOdd = _drawOdds(diff);   // based on raw elo diff
+  var pDraw   = 1 / drawOdd;
 
-  var favA = pAwin > pBwin;
-  var favB = pBwin > pAwin;
+  // HFA: home strength × 1.24, away strength × 0.76
+  // pHome = 1.24 / (1.24 + 0.76 × 10^((eloB-eloA)/400))
+  var pAwin_base = 1.24 / (1.24 + 0.76 * Math.pow(10, (eloB - eloA) / 400));
+  var pAwin   = (1 - pDraw) * pAwin_base;
+  var pBwin   = (1 - pDraw) * (1 - pAwin_base);
+
+  var oddA = (1 / pAwin).toFixed(2);
+  var oddB = (1 / pBwin).toFixed(2);
+  var oddD = drawOdd.toFixed(2);
+
+  var favA   = pAwin > pBwin;
+  var favB   = pBwin > pAwin;
   var shortA = nameA.length > 14 ? nameA.slice(0, 13) + '…' : nameA;
   var shortB = nameB.length > 14 ? nameB.slice(0, 13) + '…' : nameB;
 
@@ -2175,7 +2219,7 @@ function renderProbaResult() {
     '<div class="proba-odds-row">'
     + '<div class="proba-odd-box' + (favA ? ' fav' : '') + '">'
     +   '<div class="proba-odd-val">' + oddA + '</div>'
-    +   '<div class="proba-odd-label">' + shortA + '</div>'
+    +   '<div class="proba-odd-label">' + shortA + ' <span style="color:#2a4030">(D)</span></div>'
     + '</div>'
     + '<div class="proba-odd-box">'
     +   '<div class="proba-odd-val" style="color:#7888b0">' + oddD + '</div>'
@@ -2183,10 +2227,17 @@ function renderProbaResult() {
     + '</div>'
     + '<div class="proba-odd-box' + (favB ? ' fav' : '') + '">'
     +   '<div class="proba-odd-val">' + oddB + '</div>'
-    +   '<div class="proba-odd-label">' + shortB + '</div>'
+    +   '<div class="proba-odd-label">' + shortB + ' <span style="color:#2a3050">(E)</span></div>'
     + '</div>'
     + '</div>'
     + '<div class="proba-elo-hint">Elo ' + eloA + ' &ndash; diff ' + diff + ' &ndash; Elo ' + eloB + '</div>';
+}
+
+function swapProbaTeams() {
+  var sa = document.getElementById('proba-sel-a');
+  var sb = document.getElementById('proba-sel-b');
+  var tmp = sa.value; sa.value = sb.value; sb.value = tmp;
+  renderProbaResult();
 }
 
 // ========== NOTES (localStorage, per-browser) ==========

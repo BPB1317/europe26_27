@@ -1482,7 +1482,7 @@ function showCountryMatches(c) {
     var oppElo = clubEloLookup(oppName);
     var myEloStr  = myElo  ? ' <span style="font-size:0.65rem;color:#5a6a90">' + myElo  + '</span>' : '';
     var oppEloStr = oppElo ? ' <span style="font-size:0.65rem;color:#5a6a90">' + oppElo + '</span>' : '';
-    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(c, 13) + ' ' + myName + myEloStr + ' vs ' + flag(oppCC, 13) + ' ' + oppName + oppEloStr + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(c, 13) + ' ' + myName + myEloStr + ' vs ' + flag(oppCC, 13) + ' ' + oppName + oppEloStr + '</td><td>' + matchScore(m.result, isHome ? 'D' : 'E') + '</td><td>' + compBadge(m.comp) + '</td></tr>';
   });
   html += '</tbody></table>';
 
@@ -1503,7 +1503,7 @@ function renderDirect(c1, c2) {
   var sorted = list.slice().sort(function(a, b) { return b.date.localeCompare(a.date); });
   var html = '<table class="matches"><thead><tr><th>Date</th><th>Domicile</th><th>Extérieur</th><th>Score</th><th>Comp.</th></tr></thead><tbody>';
   sorted.forEach(function(m) {
-    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + clubEloHint(m.home) + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + clubEloHint(m.away) + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+    html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + clubEloHint(m.home) + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + clubEloHint(m.away) + '</td><td>' + matchScoreColored(m.result, 'D') + '</td><td>' + compBadge(m.comp) + '</td></tr>';
   });
   html += '</tbody></table>';
   return html;
@@ -1531,7 +1531,7 @@ function renderCommon(c1, c2) {
 
     var all = m1.concat(m2).sort(function(a, b) { return b.date.localeCompare(a.date); });
     all.forEach(function(m) {
-      html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + clubEloHint(m.home) + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + clubEloHint(m.away) + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+      html += '<tr><td>' + m.date + '</td><td class="team-cell">' + flag(m.hc, 13) + ' ' + m.home + clubEloHint(m.home) + '</td><td class="team-cell">' + flag(m.ac, 13) + ' ' + m.away + clubEloHint(m.away) + '</td><td>' + matchScoreColored(m.result, 'D') + '</td><td>' + compBadge(m.comp) + '</td></tr>';
     });
     html += '</tbody></table></div>';
   });
@@ -1873,17 +1873,30 @@ function renderClubEloTable() {
   tbody.innerHTML = html;
 }
 
-// Parse "X-Y" result and return colored HTML with club's goals first
+var _SCORE_COLORS = { W: '#44cc88', D: '#8898b8', L: '#ff6b6b' };
+
+// Colored score with club's goals first (for single-team history)
 function matchScore(result, ha) {
   if (!result || result === '?') return result || '?';
-  var m = result.match(/(\d+)\s*[\-]\s*(\d+)/);
-  if (!m) return result;
-  var homeG = parseInt(m[1]), awayG = parseInt(m[2]);
+  var p = result.match(/(\d+)\s*-\s*(\d+)/);
+  if (!p) return result;
+  var homeG = parseInt(p[1]), awayG = parseInt(p[2]);
   var myG   = ha === 'D' ? homeG : awayG;
   var oppG  = ha === 'D' ? awayG : homeG;
-  var outcome = myG > oppG ? 'W' : (myG === oppG ? 'D' : 'L');
-  var colors = { W: '#44cc88', D: '#8898b8', L: '#ff6b6b' };
-  return '<span style="color:' + colors[outcome] + ';font-weight:700">' + myG + '&#8209;' + oppG + '</span>';
+  var out   = myG > oppG ? 'W' : (myG === oppG ? 'D' : 'L');
+  return '<span style="color:' + _SCORE_COLORS[out] + ';font-weight:700">' + myG + '&#8209;' + oppG + '</span>';
+}
+
+// Colored score keeping home-first order (for Dom/Ext tables)
+function matchScoreColored(result, ha) {
+  if (!result || result === '?') return result || '?';
+  var p = result.match(/(\d+)\s*-\s*(\d+)/);
+  if (!p) return result;
+  var homeG = parseInt(p[1]), awayG = parseInt(p[2]);
+  var myG   = ha === 'D' ? homeG : awayG;
+  var oppG  = ha === 'D' ? awayG : homeG;
+  var out   = myG > oppG ? 'W' : (myG === oppG ? 'D' : 'L');
+  return '<span style="color:' + _SCORE_COLORS[out] + ';font-weight:700">' + result + '</span>';
 }
 
 function showClubMatches(name) {

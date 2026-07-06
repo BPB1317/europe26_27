@@ -1873,6 +1873,19 @@ function renderClubEloTable() {
   tbody.innerHTML = html;
 }
 
+// Parse "X-Y" result and return colored HTML with club's goals first
+function matchScore(result, ha) {
+  if (!result || result === '?') return result || '?';
+  var m = result.match(/(\d+)\s*[\-]\s*(\d+)/);
+  if (!m) return result;
+  var homeG = parseInt(m[1]), awayG = parseInt(m[2]);
+  var myG   = ha === 'D' ? homeG : awayG;
+  var oppG  = ha === 'D' ? awayG : homeG;
+  var outcome = myG > oppG ? 'W' : (myG === oppG ? 'D' : 'L');
+  var colors = { W: '#44cc88', D: '#8898b8', L: '#ff6b6b' };
+  return '<span style="color:' + colors[outcome] + ';font-weight:700">' + myG + '&#8209;' + oppG + '</span>';
+}
+
 function showClubMatches(name) {
   var club = null;
   for (var i = 0; i < DATA.clubs.length; i++) {
@@ -1898,7 +1911,13 @@ function showClubMatches(name) {
     html += '<table class="matches"><thead><tr><th>Date</th><th>Adversaire</th><th>D/E</th><th>Score</th><th></th></tr></thead><tbody>';
     sorted.forEach(function(m) {
       var haColor = m.ha === 'D' ? '#6ab0ff' : '#ffaa44';
-      html += '<tr><td>' + m.date.slice(0,7) + '</td><td class="team-cell">' + flag(m.opp_cc, 12) + ' ' + m.opp + clubEloHint(m.opp) + '</td><td style="color:' + haColor + ';font-weight:600">' + m.ha + '</td><td>' + m.result + '</td><td>' + compBadge(m.comp) + '</td></tr>';
+      html += '<tr>'
+        + '<td>' + m.date.slice(0,7) + '</td>'
+        + '<td class="team-cell">' + flag(m.opp_cc, 12) + ' ' + m.opp + clubEloHint(m.opp) + '</td>'
+        + '<td style="color:' + haColor + ';font-weight:600">' + m.ha + '</td>'
+        + '<td>' + matchScore(m.result, m.ha) + '</td>'
+        + '<td>' + compBadge(m.comp) + '</td>'
+        + '</tr>';
     });
     html += '</tbody></table>';
   }

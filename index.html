@@ -2579,11 +2579,17 @@ async function init() {
         // Index by normalized name
         var norm = normalizeName(name);
         if (!clubMatchLogNorm[norm]) clubMatchLogNorm[norm] = clubMatchLog[name];
-        // Also index by the alias canonical's normalized name
+        // Merge into canonical log so aliases share one consolidated history
         var aliasTarget = CLUB_ALIASES[norm];
         if (aliasTarget) {
           var aliasNorm = normalizeName(aliasTarget);
-          if (!clubMatchLogNorm[aliasNorm]) clubMatchLogNorm[aliasNorm] = clubMatchLog[name];
+          if (!clubMatchLog[aliasTarget]) {
+            clubMatchLog[aliasTarget] = [];
+            clubMatchLogNorm[aliasNorm] = clubMatchLog[aliasTarget];
+          }
+          if (clubMatchLog[aliasTarget] !== clubMatchLog[name]) {
+            clubMatchLog[aliasTarget].push(entry);
+          }
         }
       });
     });

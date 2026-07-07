@@ -2510,6 +2510,13 @@ async function init() {
       DATA.name_aliases[a.match_name] = a.canonical_name;
     });
 
+    // Early country lookup map (needed before clubMatchLog is built)
+    var _earlyCC = {};
+    clubsData.forEach(function(c) {
+      _earlyCC[c.name] = c.country_code;
+      _earlyCC[normalizeName(c.name)] = c.country_code;
+    });
+
     // countries sorted by UEFA_RANK
     DATA.countries = Object.keys(UEFA_RANK).sort(function(a, b) { return UEFA_RANK[a] - UEFA_RANK[b]; });
 
@@ -2567,10 +2574,20 @@ async function init() {
       [[m.home_team, true], [m.away_team, false]].forEach(function(pair) {
         var name = pair[0], isHome = pair[1];
         if (!clubMatchLog[name]) clubMatchLog[name] = [];
+        var opp    = isHome ? m.away_team    : m.home_team;
+        var opp_cc = isHome ? m.away_country : m.home_country;
+        if (!opp_cc) {
+          var _on = normalizeName(opp);
+          opp_cc = _earlyCC[opp] || _earlyCC[_on];
+          if (!opp_cc) {
+            var _ca = CLUB_ALIASES[_on];
+            if (_ca) opp_cc = _earlyCC[_ca] || _earlyCC[normalizeName(_ca)];
+          }
+        }
         var entry = {
           date: m.date,
-          opp: isHome ? m.away_team : m.home_team,
-          opp_cc: isHome ? m.away_country : m.home_country,
+          opp: opp,
+          opp_cc: opp_cc || null,
           ha: isHome ? 'D' : 'E',
           result: m.result || '?',
           comp: m.competition
@@ -2602,12 +2619,15 @@ async function init() {
         return { name: c.name, country: c.country_code, elo: c.elo, match_log: log, updated_at: c.updated_at || null };
       });
 
-    // build O(1) elo lookup maps (exact + normalized)
+    // build O(1) elo + country lookup maps (exact + normalized)
     DATA.clubs_elo_map = {};
     DATA.clubs_elo_norm_map = {};
+    DATA.clubs_country_map = {};
     DATA.clubs.forEach(function(c) {
       DATA.clubs_elo_map[c.name] = c.elo;
       DATA.clubs_elo_norm_map[normalizeName(c.name)] = c.elo;
+      DATA.clubs_country_map[c.name] = c.country;
+      DATA.clubs_country_map[normalizeName(c.name)] = c.country;
     });
 
     // update country elo from top club

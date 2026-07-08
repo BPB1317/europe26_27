@@ -582,6 +582,66 @@ table.matches tr:hover td {
   text-transform: none;
   letter-spacing: 0;
 }
+.proba-hfa-edit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.64rem;
+  color: #4a5880;
+  margin-bottom: 7px;
+}
+.proba-hfa-edit label { display: flex; align-items: center; gap: 3px; }
+.proba-hfa-edit input[type="number"] {
+  width: 40px;
+  background: #181c35;
+  border: 1px solid #252b50;
+  border-radius: 3px;
+  color: #a0b0d8;
+  text-align: center;
+  font-size: 0.68rem;
+  padding: 2px 3px;
+  -moz-appearance: textfield;
+}
+.proba-hfa-edit input[type="number"]::-webkit-inner-spin-button,
+.proba-hfa-edit input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.proba-hfa-edit input[type="number"]:focus { outline: none; border-color: #6ab0ff; }
+.proba-hfa-reset {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #3a4460;
+  font-size: 0.62rem;
+  cursor: pointer;
+  padding: 1px 3px;
+}
+.proba-hfa-reset:hover { color: #7888b0; }
+.proba-delta-section {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #181c34;
+}
+.proba-delta-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.64rem;
+  color: #4a5880;
+  margin-bottom: 6px;
+}
+.proba-delta-row input[type="number"] {
+  width: 56px;
+  background: #181c35;
+  border: 1px solid #252b50;
+  border-radius: 3px;
+  color: #a0b0d8;
+  text-align: center;
+  font-size: 0.72rem;
+  padding: 3px 4px;
+  -moz-appearance: textfield;
+}
+.proba-delta-row input[type="number"]::-webkit-inner-spin-button,
+.proba-delta-row input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.proba-delta-row input[type="number"]:focus { outline: none; border-color: #6ab0ff; }
 .proba-team-labels {
   display: flex;
   align-items: center;
@@ -1187,6 +1247,11 @@ table.matches tr:hover td {
         </div>
         <div class="proba-calc" id="proba-calc">
           <div class="proba-calc-title">Probabilités <span class="proba-hfa-badge">+ HFA</span></div>
+          <div class="proba-hfa-edit">
+            <label>&#127968; <input type="number" id="hfa-home" value="1.24" min="0.5" max="3" step="0.01" oninput="saveHFA(); renderProbaResult()"></label>
+            <label>&#9992; <input type="number" id="hfa-away" value="0.76" min="0.1" max="3" step="0.01" oninput="saveHFA(); renderProbaResult()"></label>
+            <button class="proba-hfa-reset" onclick="resetHFA()" title="Réinitialiser">&#8635; défaut</button>
+          </div>
           <div class="proba-team-labels">
             <span>&#127968; Domicile</span>
             <button class="proba-swap" onclick="swapProbaTeams()" title="Inverser domicile / extérieur">&#8644;</button>
@@ -1202,6 +1267,14 @@ table.matches tr:hover td {
             </select>
           </div>
           <div id="proba-result"></div>
+          <div class="proba-delta-section">
+            <div class="proba-delta-row">
+              <span>&#916; Elo</span>
+              <input type="number" id="proba-delta-input" placeholder="dom−ext" step="1" oninput="renderProbaDelta()">
+              <span style="color:#2a3060">(dom. &#8722; ext.)</span>
+            </div>
+            <div id="proba-delta-result"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -2206,6 +2279,32 @@ async function saveCountryTopElo(cc, input) {
 
 // ========== PROBA CALCULATOR ==========
 
+var _HFA_KEY = 'bpb_hfa';
+function _getHFA() {
+  var h = parseFloat(document.getElementById('hfa-home').value);
+  var a = parseFloat(document.getElementById('hfa-away').value);
+  return { h: isNaN(h) || h <= 0 ? 1.24 : h, a: isNaN(a) || a <= 0 ? 0.76 : a };
+}
+function saveHFA() {
+  var v = _getHFA();
+  localStorage.setItem(_HFA_KEY, JSON.stringify(v));
+}
+function resetHFA() {
+  document.getElementById('hfa-home').value = '1.24';
+  document.getElementById('hfa-away').value = '0.76';
+  localStorage.removeItem(_HFA_KEY);
+  renderProbaResult();
+}
+function loadHFA() {
+  try {
+    var v = JSON.parse(localStorage.getItem(_HFA_KEY) || 'null');
+    if (v && v.h && v.a) {
+      document.getElementById('hfa-home').value = v.h;
+      document.getElementById('hfa-away').value = v.a;
+    }
+  } catch(e) {}
+}
+
 function _drawOdds(diff) {
   if (diff < 100)  return 3.30;
   if (diff < 150)  return 3.70;
@@ -2232,9 +2331,9 @@ function renderProbaResult() {
   var drawOdd = _drawOdds(diff);   // based on raw elo diff
   var pDraw   = 1 / drawOdd;
 
-  // HFA: home strength × 1.24, away strength × 0.76
-  // pHome = 1.24 / (1.24 + 0.76 × 10^((eloB-eloA)/400))
-  var pAwin_base = 1.24 / (1.24 + 0.76 * Math.pow(10, (eloB - eloA) / 400));
+  var hfa = _getHFA();
+  var hH = hfa.h, hA = hfa.a;
+  var pAwin_base = hH / (hH + hA * Math.pow(10, (eloB - eloA) / 400));
   var pAwin   = (1 - pDraw) * pAwin_base;
   var pBwin   = (1 - pDraw) * (1 - pAwin_base);
 
@@ -2263,6 +2362,30 @@ function renderProbaResult() {
     + '</div>'
     + '</div>'
     + '<div class="proba-elo-hint">Elo ' + eloA + ' &ndash; diff ' + diff + ' &ndash; Elo ' + eloB + '</div>';
+}
+
+function renderProbaDelta() {
+  var res = document.getElementById('proba-delta-result');
+  var raw = document.getElementById('proba-delta-input').value;
+  if (raw === '' || raw === null) { res.innerHTML = ''; return; }
+  var delta = parseInt(raw);
+  if (isNaN(delta)) { res.innerHTML = ''; return; }
+
+  var diff    = Math.abs(delta);
+  var drawOdd = _drawOdds(diff);
+  var pDraw   = 1 / drawOdd;
+  var hfa = _getHFA();
+  // delta = eloHome − eloAway, so eloB − eloA = −delta
+  var pHwin_base = hfa.h / (hfa.h + hfa.a * Math.pow(10, -delta / 400));
+  var pHwin = (1 - pDraw) * pHwin_base;
+  var pAwin = (1 - pDraw) * (1 - pHwin_base);
+  var favH = pHwin > pAwin, favA = pAwin > pHwin;
+  res.innerHTML =
+    '<div class="proba-odds-row">'
+    + '<div class="proba-odd-box' + (favH ? ' fav' : '') + '"><div class="proba-odd-label">(D)</div><div class="proba-odd-val">' + (1/pHwin).toFixed(2) + '</div></div>'
+    + '<div class="proba-odd-box"><div class="proba-odd-label">N</div><div class="proba-odd-val">' + drawOdd.toFixed(2) + '</div></div>'
+    + '<div class="proba-odd-box' + (favA ? ' fav' : '') + '"><div class="proba-odd-label">(E)</div><div class="proba-odd-val">' + (1/pAwin).toFixed(2) + '</div></div>'
+    + '</div>';
 }
 
 function swapProbaTeams() {
@@ -2644,6 +2767,7 @@ async function init() {
     buildMatrix();
     initSelects();
     initClubTab();
+    loadHFA();
 
   } catch(err) {
     document.getElementById('loading').innerHTML = '<div style="color:#ff6b6b">Erreur de chargement : ' + (err.message || String(err)) + '</div>';

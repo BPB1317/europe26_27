@@ -2339,7 +2339,7 @@ function renderProbaResult() {
 
   var h       = _getHFA().h;
   var pNeutH  = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
-  var pAwin   = h * (1 - pDraw) * pNeutH + (h - 1) * pDraw / 3;
+  var pAwin   = (h * pNeutH * (3 - pDraw) - pDraw) / 3;
   var pBwin   = 1 - pDraw - pAwin;
 
   var oddA = (1 / pAwin).toFixed(2);
@@ -2381,7 +2381,7 @@ function renderProbaDelta() {
   var pDraw   = 1 / drawOdd;
   var h       = _getHFA().h;
   var pNeutH  = 1 / (1 + Math.pow(10, -delta / 400));
-  var pHwin   = h * (1 - pDraw) * pNeutH + (h - 1) * pDraw / 3;
+  var pHwin   = (h * pNeutH * (3 - pDraw) - pDraw) / 3;
   var pAwin   = 1 - pDraw - pHwin;
   var favH = pHwin > pAwin, favA = pAwin > pHwin;
   res.innerHTML =

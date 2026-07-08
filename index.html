@@ -2337,11 +2337,10 @@ function renderProbaResult() {
   var drawOdd = _drawOdds(diff);   // based on raw elo diff
   var pDraw   = 1 / drawOdd;
 
-  var hfa = _getHFA();
-  var hH = hfa.h, hA = hfa.a;
-  var pAwin_base = hH / (hH + hA * Math.pow(10, (eloB - eloA) / 400));
-  var pAwin   = (1 - pDraw) * pAwin_base;
-  var pBwin   = (1 - pDraw) * (1 - pAwin_base);
+  var h       = _getHFA().h;
+  var pNeutH  = 1 / (1 + Math.pow(10, (eloB - eloA) / 400));
+  var pAwin   = h * pNeutH + (h - 1) * pDraw / 3;
+  var pBwin   = 1 - pDraw - pAwin;
 
   var oddA = (1 / pAwin).toFixed(2);
   var oddB = (1 / pBwin).toFixed(2);
@@ -2380,11 +2379,10 @@ function renderProbaDelta() {
   var diff    = Math.abs(delta);
   var drawOdd = _drawOdds(diff);
   var pDraw   = 1 / drawOdd;
-  var hfa = _getHFA();
-  // delta = eloHome − eloAway, so eloB − eloA = −delta
-  var pHwin_base = hfa.h / (hfa.h + hfa.a * Math.pow(10, -delta / 400));
-  var pHwin = (1 - pDraw) * pHwin_base;
-  var pAwin = (1 - pDraw) * (1 - pHwin_base);
+  var h       = _getHFA().h;
+  var pNeutH  = 1 / (1 + Math.pow(10, -delta / 400));
+  var pHwin   = h * pNeutH + (h - 1) * pDraw / 3;
+  var pAwin   = 1 - pDraw - pHwin;
   var favH = pHwin > pAwin, favA = pAwin > pHwin;
   res.innerHTML =
     '<div class="proba-odds-row">'

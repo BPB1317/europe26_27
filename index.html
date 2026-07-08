@@ -1248,9 +1248,10 @@ table.matches tr:hover td {
         <div class="proba-calc" id="proba-calc">
           <div class="proba-calc-title">Probabilités <span class="proba-hfa-badge">+ HFA</span></div>
           <div class="proba-hfa-edit">
-            <label>&#127968; <input type="number" id="hfa-home" value="1.24" min="0.5" max="3" step="0.01" oninput="saveHFA(); renderProbaResult()"></label>
-            <label>&#9992; <input type="number" id="hfa-away" value="0.76" min="0.1" max="3" step="0.01" oninput="saveHFA(); renderProbaResult()"></label>
-            <button class="proba-hfa-reset" onclick="resetHFA()" title="Réinitialiser">&#8635; défaut</button>
+            <span>HFA</span>
+            <input type="number" id="hfa-val" value="1.24" min="1.0" max="1.99" step="0.01" oninput="saveHFA(); renderProbaResult(); renderProbaDelta()">
+            <span style="color:#2a3060;font-size:0.6rem">dom. gagne&nbsp;<span id="hfa-pct">62</span>% des matchs décidés (δ=0)</span>
+            <button class="proba-hfa-reset" onclick="resetHFA()" title="Réinitialiser">&#8635;</button>
           </div>
           <div class="proba-team-labels">
             <span>&#127968; Domicile</span>
@@ -2281,28 +2282,33 @@ async function saveCountryTopElo(cc, input) {
 
 var _HFA_KEY = 'bpb_hfa';
 function _getHFA() {
-  var h = parseFloat(document.getElementById('hfa-home').value);
-  var a = parseFloat(document.getElementById('hfa-away').value);
-  return { h: isNaN(h) || h <= 0 ? 1.24 : h, a: isNaN(a) || a <= 0 ? 0.76 : a };
+  var h = parseFloat(document.getElementById('hfa-val').value);
+  if (isNaN(h) || h < 1 || h >= 2) h = 1.24;
+  return { h: h, a: 2 - h };
+}
+function _updateHFAPct() {
+  var el = document.getElementById('hfa-pct');
+  if (el) el.textContent = Math.round(_getHFA().h / 2 * 100);
 }
 function saveHFA() {
-  var v = _getHFA();
-  localStorage.setItem(_HFA_KEY, JSON.stringify(v));
+  localStorage.setItem(_HFA_KEY, String(_getHFA().h));
+  _updateHFAPct();
 }
 function resetHFA() {
-  document.getElementById('hfa-home').value = '1.24';
-  document.getElementById('hfa-away').value = '0.76';
+  document.getElementById('hfa-val').value = '1.24';
   localStorage.removeItem(_HFA_KEY);
+  _updateHFAPct();
   renderProbaResult();
+  renderProbaDelta();
 }
 function loadHFA() {
   try {
-    var v = JSON.parse(localStorage.getItem(_HFA_KEY) || 'null');
-    if (v && v.h && v.a) {
-      document.getElementById('hfa-home').value = v.h;
-      document.getElementById('hfa-away').value = v.a;
+    var v = parseFloat(localStorage.getItem(_HFA_KEY));
+    if (!isNaN(v) && v >= 1 && v < 2) {
+      document.getElementById('hfa-val').value = v.toFixed(2);
     }
   } catch(e) {}
+  _updateHFAPct();
 }
 
 function _drawOdds(diff) {

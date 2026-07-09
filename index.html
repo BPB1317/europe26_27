@@ -164,7 +164,6 @@
 <div class="app-tabs">
   <button class="app-tab active" id="app-tab-matrix"  onclick="switchAppTab('matrix')">Matrice</button>
   <button class="app-tab"        id="app-tab-clubelo" onclick="switchAppTab('clubelo')">Club Elo</button>
-  <button class="app-tab"        id="app-tab-proba"   onclick="switchAppTab('proba')">Probabilités</button>
 </div>
 <div id="section-matrix" class="app-section active">
 <h1>Matrice des confrontations — Compétitions européennes</h1>
@@ -190,24 +189,6 @@
 <div class="wrapper">
 <table id="matrix-table"></table>
 </div>
-</div>
-<div id="section-clubelo" class="app-section">
-<h1>Club Elo</h1>
-<p class="subtitle">Classement Elo des clubs — cliquer sur un club pour voir ses matchs · éditer clubs.json pour calibrer les elos</p>
-<div class="elo-toolbar">
-  <input type="text" id="club-filter-text" placeholder="Chercher un club…" oninput="filterClubs()">
-  <select id="club-filter-country" onchange="filterClubs()"><option value="">Tous les pays</option></select>
-</div>
-<div class="elo-table-wrap">
-  <table class="elo-table">
-    <thead><tr><th>#</th><th>Club</th><th>Pays</th><th>Elo</th><th>Matchs EU</th></tr></thead>
-    <tbody id="elo-tbody"></tbody>
-  </table>
-</div>
-</div>
-<div id="section-proba" class="app-section">
-<h1>Calculateur de probabilités</h1>
-<p class="subtitle">Cotes théoriques basées sur les Elo — formule P(dom) = (h × pElo × (3−P(N)) − P(N)) / 3</p>
 <div class="proba-calc" id="proba-calc">
   <div class="proba-calc-title">Probabilités <span class="proba-hfa-badge">+ HFA</span></div>
   <div class="proba-hfa-edit">
@@ -234,6 +215,20 @@
     </div>
     <div id="proba-delta-result"></div>
   </div>
+</div>
+</div>
+<div id="section-clubelo" class="app-section">
+<h1>Club Elo</h1>
+<p class="subtitle">Classement Elo des clubs — cliquer sur un club pour voir ses matchs · éditer clubs.json pour calibrer les elos</p>
+<div class="elo-toolbar">
+  <input type="text" id="club-filter-text" placeholder="Chercher un club…" oninput="filterClubs()">
+  <select id="club-filter-country" onchange="filterClubs()"><option value="">Tous les pays</option></select>
+</div>
+<div class="elo-table-wrap">
+  <table class="elo-table">
+    <thead><tr><th>#</th><th>Club</th><th>Pays</th><th>Elo</th><th>Matchs EU</th></tr></thead>
+    <tbody id="elo-tbody"></tbody>
+  </table>
 </div>
 </div>
 <div id="overlay" onclick="closeModal()"></div>
@@ -494,7 +489,6 @@ function switchAppTab(tab) {
   document.getElementById('section-' + tab).classList.add('active');
   document.getElementById('app-tab-' + tab).classList.add('active');
   if (tab === 'clubelo') renderClubEloTable();
-  if (tab === 'proba') initProbaTab();
 }
 
 // ── Club Elo tab ──────────────────────────────────────────────────────────────
@@ -585,6 +579,7 @@ function initClubTab() {
 buildMatrix();
 initSelects();
 initClubTab();
+initProbaTab();
 
 // ── Proba calc ────────────────────────────────────────────────────────────────
 var _HFA_KEY = 'bpb_hfa';

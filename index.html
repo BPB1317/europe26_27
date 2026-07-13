@@ -1271,8 +1271,13 @@ table.matches tr:hover td {
           <div class="proba-delta-section">
             <div class="proba-delta-row">
               <span>&#916; Elo</span>
-              <input type="number" id="proba-delta-input" placeholder="dom−ext" step="1" oninput="renderProbaDelta()">
+              <input type="number" id="proba-delta-input" placeholder="dom−ext" step="1" oninput="onDeltaInput()">
               <span style="color:#2a3060">(dom. &#8722; ext.)</span>
+            </div>
+            <div class="proba-delta-row">
+              <span>Cote N</span>
+              <input type="number" id="proba-delta-draw" placeholder="auto" step="0.01" min="1.01" oninput="renderProbaDelta()">
+              <button class="proba-hfa-reset" onclick="resetDeltaDraw()" title="Remettre auto">&#8635;</button>
             </div>
             <div id="proba-delta-result"></div>
           </div>
@@ -2369,6 +2374,25 @@ function renderProbaResult() {
     + '<div class="proba-elo-hint">Elo ' + eloA + ' &ndash; diff ' + diff + ' &ndash; Elo ' + eloB + '</div>';
 }
 
+function onDeltaInput() {
+  var raw = document.getElementById('proba-delta-input').value;
+  var drawEl = document.getElementById('proba-delta-draw');
+  if (raw !== '' && !isNaN(parseInt(raw))) {
+    drawEl.placeholder = _drawOdds(Math.abs(parseInt(raw))).toFixed(2);
+  } else {
+    drawEl.placeholder = 'auto';
+  }
+  renderProbaDelta();
+}
+function resetDeltaDraw() {
+  var drawEl = document.getElementById('proba-delta-draw');
+  drawEl.value = '';
+  var raw = document.getElementById('proba-delta-input').value;
+  if (raw !== '' && !isNaN(parseInt(raw))) {
+    drawEl.placeholder = _drawOdds(Math.abs(parseInt(raw))).toFixed(2);
+  }
+  renderProbaDelta();
+}
 function renderProbaDelta() {
   var res = document.getElementById('proba-delta-result');
   var raw = document.getElementById('proba-delta-input').value;
@@ -2377,17 +2401,19 @@ function renderProbaDelta() {
   if (isNaN(delta)) { res.innerHTML = ''; return; }
 
   var diff    = Math.abs(delta);
-  var drawOdd = _drawOdds(diff);
+  var drawRaw = document.getElementById('proba-delta-draw').value;
+  var drawOdd = (drawRaw !== '' && parseFloat(drawRaw) > 1) ? parseFloat(drawRaw) : _drawOdds(diff);
   var pDraw   = 1 / drawOdd;
   var h       = _getHFA().h;
   var pNeutH  = 1 / (1 + Math.pow(10, -delta / 400));
   var pHwin   = (h * pNeutH * (3 - pDraw) - pDraw) / 3;
   var pAwin   = 1 - pDraw - pHwin;
   var favH = pHwin > pAwin, favA = pAwin > pHwin;
+  var manualMark = (drawRaw !== '' && parseFloat(drawRaw) > 1) ? ' *' : '';
   res.innerHTML =
     '<div class="proba-odds-row">'
     + '<div class="proba-odd-box' + (favH ? ' fav' : '') + '"><div class="proba-odd-label">(D)</div><div class="proba-odd-val">' + (1/pHwin).toFixed(2) + '</div></div>'
-    + '<div class="proba-odd-box"><div class="proba-odd-label">N</div><div class="proba-odd-val">' + drawOdd.toFixed(2) + '</div></div>'
+    + '<div class="proba-odd-box"><div class="proba-odd-label">N' + manualMark + '</div><div class="proba-odd-val">' + drawOdd.toFixed(2) + '</div></div>'
     + '<div class="proba-odd-box' + (favA ? ' fav' : '') + '"><div class="proba-odd-label">(E)</div><div class="proba-odd-val">' + (1/pAwin).toFixed(2) + '</div></div>'
     + '</div>';
 }

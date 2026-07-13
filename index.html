@@ -1117,6 +1117,76 @@ table.matches tr:hover td {
   flex-direction: column;
   gap: 12px;
 }
+
+/* ========== A/R OVERVIEW ========== */
+.aro-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.aro-filters label { color: #5a6a90; font-size: 0.8rem; }
+.aro-filters select, .aro-filters input[type=date] {
+  background: #1a1c34; border: 1px solid #2a2a48; border-radius: 6px;
+  color: #d0d4e8; font-size: 0.82rem; padding: 6px 10px;
+}
+.aro-btn {
+  background: #1c3270; border: none; border-radius: 6px;
+  color: #7ec8ff; cursor: pointer; font-size: 0.82rem;
+  font-weight: 600; padding: 6px 14px;
+}
+.aro-band {
+  margin-bottom: 20px; border: 1px solid #1e1e38;
+  border-radius: 10px; overflow: hidden;
+}
+.aro-band-title {
+  background: #13142a; border-bottom: 1px solid #1e1e38;
+  color: #8ab4ff; font-size: 0.86rem; font-weight: 700;
+  padding: 9px 14px; display: flex; align-items: center; gap: 10px;
+}
+.aro-band-range { color: #5a6a90; font-weight: 400; font-size: 0.75rem; }
+.aro-band-count { color: #5a6a90; font-weight: 400; font-size: 0.73rem; margin-left: auto; }
+.aro-cols {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  overflow-x: auto;
+}
+.aro-col {
+  border-right: 1px solid #1e1e38; padding: 8px 6px; min-width: 130px;
+}
+.aro-col:last-child { border-right: none; }
+.aro-col-head {
+  font-size: 0.71rem; font-weight: 700; text-align: center;
+  padding: 4px 0 7px; border-bottom: 2px solid transparent;
+  margin-bottom: 6px; white-space: nowrap;
+}
+.aro-col-count { font-weight: 400; color: #5a6a90; }
+.aro-col-head.w3   { color: #22c55e; border-color: #22c55e; }
+.aro-col-head.w12  { color: #86efac; border-color: #86efac; }
+.aro-col-head.draw { color: #94a3b8; border-color: #94a3b8; }
+.aro-col-head.l12  { color: #fca5a5; border-color: #fca5a5; }
+.aro-col-head.l3   { color: #ef4444; border-color: #ef4444; }
+.aro-card {
+  background: #0f1117; border: 1px solid #1e1e38; border-radius: 6px;
+  margin-bottom: 5px; padding: 5px 6px; font-size: 0.73rem;
+}
+.aro-card-meta { color: #3a4a6a; font-size: 0.65rem; margin-bottom: 3px; }
+.aro-card-match { display: flex; align-items: center; gap: 4px; }
+.aro-team { color: #c0caef; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aro-team.home { text-align: right; }
+.aro-team.away { text-align: left; }
+.aro-score {
+  background: #1c3270; border-radius: 4px; color: #7ec8ff;
+  font-size: 0.78rem; font-weight: 700; padding: 1px 5px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.aro-noelo-band { margin-top: 10px; border: 1px solid #1e1e38; border-radius: 8px; overflow: hidden; }
+.aro-noelo-list { display: flex; flex-wrap: wrap; gap: 5px; padding: 10px 14px; }
+.aro-noelo-item {
+  background: #0f1117; border: 1px solid #2a2a48; border-radius: 5px;
+  color: #5a6a90; font-size: 0.7rem; padding: 2px 7px;
+}
+.aro-empty { color: #5a6a90; font-size: 0.85rem; padding: 30px 0; text-align: center; }
 </style>
 </head>
 <body>
@@ -1133,6 +1203,7 @@ table.matches tr:hover td {
     <button class="app-tab active" id="app-tab-matrix" onclick="switchAppTab('matrix')">&#9726; Matrice</button>
     <button class="app-tab" id="app-tab-clubelo" onclick="switchAppTab('clubelo')">&#9733; Club Elo</button>
     <button class="app-tab" id="app-tab-notes" onclick="switchAppTab('notes')">&#9998; Notes</button>
+    <button class="app-tab" id="app-tab-aroverview" onclick="switchAppTab('aroverview')">&#9671; A/R Overview</button>
   </div>
 </div>
 
@@ -1297,6 +1368,28 @@ table.matches tr:hover td {
     <div class="notes-grid" id="notes-grid">
       <div class="notes-empty">Aucune note — cliquez sur &laquo;&nbsp;+ Nouvelle note&nbsp;&raquo; pour commencer.</div>
     </div>
+  </div>
+</div>
+
+<!-- ===== A/R OVERVIEW SECTION ===== -->
+<div id="section-aroverview" class="app-section">
+  <div class="wrapper">
+    <h1>A/R Overview</h1>
+    <p class="subtitle">Résultats du match aller, classés par delta Elo (Dom &#8722; Ext)</p>
+    <div class="aro-filters">
+      <select id="aro-comp" onchange="renderARO()">
+        <option value="ALL">Toutes comps</option>
+        <option value="UCL">UCL</option>
+        <option value="UEL">UEL</option>
+        <option value="UECL">UECL</option>
+      </select>
+      <label>Du</label>
+      <input type="date" id="aro-from" onchange="renderARO()">
+      <label>au</label>
+      <input type="date" id="aro-to" onchange="renderARO()">
+      <button class="aro-btn" onclick="resetARO()">&#8635; Reset</button>
+    </div>
+    <div id="aro-body"></div>
   </div>
 </div>
 
@@ -1837,6 +1930,9 @@ function switchAppTab(tab) {
   } else if (tab === 'notes') {
     document.getElementById('section-notes').classList.add('active');
     renderNotes();
+  } else if (tab === 'aroverview') {
+    document.getElementById('section-aroverview').classList.add('active');
+    renderARO();
   } else {
     document.getElementById('section-clubelo').classList.add('active');
   }
@@ -2626,6 +2722,124 @@ async function deleteNameMapping(matchName) {
   }
 }
 
+// ========== A/R OVERVIEW ==========
+
+function resetARO() {
+  document.getElementById('aro-from').value = '';
+  document.getElementById('aro-to').value   = '';
+  renderARO();
+}
+
+function _aroParseResult(result) {
+  if (!result) return null;
+  var m = (result + '').match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (!m) return null;
+  return { h: parseInt(m[1]), a: parseInt(m[2]) };
+}
+
+function renderARO() {
+  var compEl = document.getElementById('aro-comp');
+  var fromEl = document.getElementById('aro-from');
+  var toEl   = document.getElementById('aro-to');
+  var body   = document.getElementById('aro-body');
+  if (!compEl || !body) return;
+
+  var comp = compEl.value;
+  var from = fromEl.value;
+  var to   = toEl.value;
+
+  if (!DATA.raw_matches || !DATA.raw_matches.length) {
+    body.innerHTML = '<div class="aro-empty">Données non encore chargées.</div>';
+    return;
+  }
+
+  var ms = DATA.raw_matches.filter(function(m) {
+    if (comp !== 'ALL' && m.competition !== comp) return false;
+    if (from && m.date < from) return false;
+    if (to   && m.date > to)   return false;
+    return true;
+  });
+
+  var BANDS = [
+    { key: 'close', label: 'Close',      min: 0,   max: 50   },
+    { key: 'bal',   label: 'Balanced',   min: 50,  max: 130  },
+    { key: 'unbal', label: 'Unbalanced', min: 130, max: 250  },
+    { key: 'lop',   label: 'Lopsided',   min: 250, max: 1e9  }
+  ];
+  var RCATS = [
+    { key: 'w3',   label: 'W &#8805;3', cls: 'w3'   },
+    { key: 'w12',  label: 'W 1&#8211;2', cls: 'w12'  },
+    { key: 'draw', label: 'Draw',        cls: 'draw' },
+    { key: 'l12',  label: 'L 1&#8211;2', cls: 'l12'  },
+    { key: 'l3',   label: 'L &#8805;3', cls: 'l3'   }
+  ];
+
+  var groups = {};
+  BANDS.forEach(function(b) {
+    groups[b.key] = {};
+    RCATS.forEach(function(r) { groups[b.key][r.key] = []; });
+  });
+  var noEloCards = [];
+
+  ms.forEach(function(m) {
+    var res = _aroParseResult(m.result);
+    if (!res) return;
+    var hElo = clubEloLookup(m.home_team);
+    var aElo = clubEloLookup(m.away_team);
+    var delta = (hElo && aElo) ? (hElo - aElo) : null;
+    var absDelta = delta !== null ? Math.abs(delta) : null;
+    var diff = res.h - res.a;
+    var rk = diff >= 3 ? 'w3' : diff >= 1 ? 'w12' : diff === 0 ? 'draw' : diff >= -2 ? 'l12' : 'l3';
+    var card = { m: m, delta: delta, res: res };
+    if (absDelta === null) { noEloCards.push(card); return; }
+    for (var i = 0; i < BANDS.length; i++) {
+      if (absDelta >= BANDS[i].min && absDelta < BANDS[i].max) {
+        groups[BANDS[i].key][rk].push(card); return;
+      }
+    }
+  });
+
+  var html = '';
+  BANDS.forEach(function(band) {
+    var total = RCATS.reduce(function(s, r) { return s + groups[band.key][r.key].length; }, 0);
+    if (!total) return;
+    var rng = band.max >= 1e9 ? '&#8805; ' + band.min : band.min + '&#8211;' + (band.max - 1);
+    html += '<div class="aro-band"><div class="aro-band-title">' + band.label +
+            ' <span class="aro-band-range">|&Delta;| ' + rng + '</span>' +
+            ' <span class="aro-band-count">' + total + ' match' + (total > 1 ? 's' : '') + '</span></div>';
+    html += '<div class="aro-cols">';
+    RCATS.forEach(function(rc) {
+      var cards = groups[band.key][rc.key];
+      html += '<div class="aro-col"><div class="aro-col-head ' + rc.cls + '">' + rc.label +
+              ' <span class="aro-col-count">(' + cards.length + ')</span></div>';
+      cards.forEach(function(card) {
+        var dStr = card.delta !== null ? (card.delta >= 0 ? '+' : '') + Math.round(card.delta) : '?';
+        html += '<div class="aro-card">' +
+                '<div class="aro-card-meta">' + (card.m.competition || '?') + ' &middot; &Delta;&nbsp;' + dStr + ' &middot; ' + card.m.date + '</div>' +
+                '<div class="aro-card-match">' +
+                '<span class="aro-team home" title="' + card.m.home_team + '">' + card.m.home_team + '</span>' +
+                '<span class="aro-score">' + card.res.h + '&#8211;' + card.res.a + '</span>' +
+                '<span class="aro-team away" title="' + card.m.away_team + '">' + card.m.away_team + '</span>' +
+                '</div></div>';
+      });
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  if (noEloCards.length) {
+    html += '<div class="aro-noelo-band"><div class="aro-band-title" style="color:#5a6a90">Elo non renseigné' +
+            ' <span class="aro-band-count">' + noEloCards.length + ' match' + (noEloCards.length > 1 ? 's' : '') + '</span></div>' +
+            '<div class="aro-noelo-list">';
+    noEloCards.forEach(function(card) {
+      html += '<span class="aro-noelo-item">' + card.m.home_team + ' ' + card.res.h + '&#8211;' + card.res.a + ' ' + card.m.away_team + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  body.innerHTML = html || '<div class="aro-empty">Aucun match pour ces filtres.</div>';
+}
+
 // ========== ASYNC INIT ==========
 
 async function fetchAll(table) {
@@ -2655,6 +2869,9 @@ async function init() {
     var clubsData = results[1];
     var matchesData = results[2];
     var aliasesData = results[3];
+
+    // Keep raw match rows for A/R Overview
+    DATA.raw_matches = matchesData;
 
     // Merge custom name aliases into CLUB_ALIASES (loaded from Supabase)
     DATA.name_aliases = {};

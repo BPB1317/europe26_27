@@ -716,6 +716,25 @@ table.matches tr:hover td {
   text-align: center;
   margin-top: 6px;
 }
+.proba-hdp-wrap { margin-top: 10px; }
+.proba-hdp-head {
+  font-size: 0.62rem; color: #2a3460; text-align: center;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.proba-hdp-row {
+  display: flex; align-items: center;
+  padding: 3px 0; border-top: 1px solid #111428;
+}
+.proba-hdp-line {
+  flex: 0 0 46px; text-align: center;
+  font-size: 0.68rem; color: #3a4460; font-weight: 600;
+}
+.proba-hdp-val {
+  flex: 1; text-align: center;
+  font-size: 0.92rem; font-weight: 700; color: #c8d6f0;
+}
+.proba-hdp-val.fav { color: #6ab0ff; }
 
 .club-detail-placeholder {
   color: #2e3450;
@@ -2511,11 +2530,35 @@ function renderProbaDelta() {
   var pAwin   = 1 - pDraw - pHwin;
   var favH = pHwin > pAwin, favA = pAwin > pHwin;
   var manualMark = (drawRaw !== '' && parseFloat(drawRaw) > 1) ? ' *' : '';
+
+  // HDP fair odds — each side receives the stated handicap
+  var hdpH05  = 1 / (pHwin + pDraw);
+  var hdpH025 = (1 - pDraw / 2) / (pHwin + pDraw / 2);
+  var hdpH0   = pHwin > 0 ? (1 - pDraw) / pHwin : 99;
+  var hdpA05  = 1 / (pAwin + pDraw);
+  var hdpA025 = (1 - pDraw / 2) / (pAwin + pDraw / 2);
+  var hdpA0   = pAwin > 0 ? (1 - pDraw) / pAwin : 99;
+
+  function hv(v, isFav) {
+    return '<div class="proba-hdp-val' + (isFav ? ' fav' : '') + '">' + v.toFixed(2) + '</div>';
+  }
+  function hdpRow(label, vH, vA) {
+    return '<div class="proba-hdp-row">'
+      + hv(vH, favH) + '<div class="proba-hdp-line">' + label + '</div>' + hv(vA, favA)
+      + '</div>';
+  }
+
   res.innerHTML =
     '<div class="proba-odds-row">'
     + '<div class="proba-odd-box' + (favH ? ' fav' : '') + '"><div class="proba-odd-label">(D)</div><div class="proba-odd-val">' + (1/pHwin).toFixed(2) + '</div></div>'
     + '<div class="proba-odd-box"><div class="proba-odd-label">N' + manualMark + '</div><div class="proba-odd-val">' + drawOdd.toFixed(2) + '</div></div>'
     + '<div class="proba-odd-box' + (favA ? ' fav' : '') + '"><div class="proba-odd-label">(E)</div><div class="proba-odd-val">' + (1/pAwin).toFixed(2) + '</div></div>'
+    + '</div>'
+    + '<div class="proba-hdp-wrap">'
+    + '<div class="proba-hdp-head">(D) &nbsp;HDP&nbsp; (E)</div>'
+    + hdpRow('+0.5',  hdpH05,  hdpA05)
+    + hdpRow('+0.25', hdpH025, hdpA025)
+    + hdpRow('0',     hdpH0,   hdpA0)
     + '</div>';
 }
 

@@ -1137,6 +1137,9 @@ table.matches tr:hover td {
   color: #7ec8ff; cursor: pointer; font-size: 0.82rem;
   font-weight: 600; padding: 6px 14px;
 }
+.aro-btn.active {
+  background: #2a5cbf; color: #fff; outline: 2px solid #7ec8ff;
+}
 .aro-band {
   margin-bottom: 20px; border: 1px solid #1e1e38;
   border-radius: 10px; overflow: hidden;
@@ -1388,6 +1391,7 @@ table.matches tr:hover td {
       <input type="date" id="aro-from" onchange="renderARO()">
       <label>au</label>
       <input type="date" id="aro-to" onchange="renderARO()">
+      <button id="aro-aller-btn" class="aro-btn" onclick="toggleAllerOnly()">Aller seulement</button>
       <button class="aro-btn" onclick="resetARO()">&#8635; Reset</button>
     </div>
     <div id="aro-body"></div>
@@ -2725,9 +2729,31 @@ async function deleteNameMapping(matchName) {
 
 // ========== A/R OVERVIEW ==========
 
+var ALLER_WINDOWS = [
+  ['2024-07-09','2024-07-11'], ['2024-07-23','2024-07-25'],
+  ['2024-08-06','2024-08-08'], ['2024-08-20','2024-08-22'],
+  ['2025-02-11','2025-02-13'], ['2025-03-04','2025-03-06'],
+  ['2025-04-08','2025-04-10'], ['2025-04-29','2025-05-01'],
+  ['2025-07-08','2025-07-10'], ['2025-07-22','2025-07-24'],
+  ['2025-08-05','2025-08-07'], ['2025-08-19','2025-08-21'],
+  ['2026-02-17','2026-02-19'], ['2026-03-10','2026-03-12'],
+  ['2026-04-07','2026-04-09'], ['2026-04-28','2026-04-30'],
+];
+var _aroAllerOnly = false;
+
+function toggleAllerOnly() {
+  _aroAllerOnly = !_aroAllerOnly;
+  var btn = document.getElementById('aro-aller-btn');
+  if (btn) btn.classList.toggle('active', _aroAllerOnly);
+  renderARO();
+}
+
 function resetARO() {
   document.getElementById('aro-from').value = '';
   document.getElementById('aro-to').value   = '';
+  _aroAllerOnly = false;
+  var btn = document.getElementById('aro-aller-btn');
+  if (btn) btn.classList.remove('active');
   renderARO();
 }
 
@@ -2758,6 +2784,10 @@ function renderARO() {
     if (comp !== 'ALL' && m.competition !== comp) return false;
     if (from && m.date < from) return false;
     if (to   && m.date > to)   return false;
+    if (_aroAllerOnly) {
+      var inWindow = ALLER_WINDOWS.some(function(w) { return m.date >= w[0] && m.date <= w[1]; });
+      if (!inWindow) return false;
+    }
     return true;
   });
 

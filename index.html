@@ -1210,6 +1210,47 @@ table.matches tr:hover td {
   color: #5a6a90; font-size: 0.7rem; padding: 2px 7px;
 }
 .aro-empty { color: #5a6a90; font-size: 0.85rem; padding: 30px 0; text-align: center; }
+
+/* ========== MV RANKING ========== */
+.mv-toolbar {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.mv-toolbar input[type=text] {
+  background: #1a1c34; border: 1px solid #2a2e55; border-radius: 6px;
+  color: #d0d4e8; font-size: 0.82rem; padding: 5px 10px; width: 240px; outline: none;
+}
+.mv-toolbar input[type=text]:focus { border-color: #4d7fff; }
+.mv-stats-badge { color: #7888b0; font-size: 0.75rem; }
+.mv-table-wrap { overflow-x: auto; }
+.mv-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.mv-table thead th {
+  background: #13142a; color: #8ab4ff; padding: 7px 10px;
+  border-bottom: 1px solid #1e1e3a; white-space: nowrap; text-align: left;
+}
+.mv-th { cursor: pointer; user-select: none; }
+.mv-th:hover { color: #c0caef; }
+.mv-th.mv-sort-active { color: #7ec8ff; }
+.mv-table tbody tr { border-bottom: 1px solid #1a1a2e; transition: background 0.12s; }
+.mv-table tbody tr:hover { background: #1a1c34; }
+.mv-table td { padding: 5px 10px; vertical-align: middle; }
+td.mv-rank { color: #5a6a90; font-size: 0.7rem; width: 30px; font-variant-numeric: tabular-nums; }
+td.mv-flag { font-size: 1rem; width: 26px; text-align: center; }
+td.mv-name { font-weight: 500; color: #e8ecff; }
+td.mv-cc   { color: #5a6a90; font-size: 0.7rem; font-family: monospace; }
+td.mv-elo  { font-variant-numeric: tabular-nums; color: #6ab0ff; font-size: 0.78rem; text-align: right; }
+td.mv-avg  { color: #a0b4d4; font-variant-numeric: tabular-nums; font-size: 0.78rem; text-align: right; }
+td.mv-total{ font-weight: 600; color: #d0d4e8; font-variant-numeric: tabular-nums; text-align: right; min-width: 90px; }
+.mv-nd { color: #3a3a5a; }
+td.mv-bar-cell { width: 110px; }
+.mv-bar { height: 7px; border-radius: 4px; transition: width 0.3s; min-width: 2px; }
+.mv-tier-elite { background: linear-gradient(90deg,#2a6fff,#7ec8ff); }
+.mv-tier-top   { background: #2a9d5c; }
+.mv-tier-mid   { background: #c7952a; }
+.mv-tier-low   { background: #3d4a70; }
+tr.mv-nodata td { opacity: 0.48; }
+.mv-source { color: #35405a; font-size: 0.68rem; margin-top: 14px; }
+.mv-legend { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:10px; font-size:0.72rem; color:#7888b0; align-items:center; }
+.mv-legend-dot { width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px; }
 </style>
 </head>
 <body>
@@ -1227,6 +1268,7 @@ table.matches tr:hover td {
     <button class="app-tab" id="app-tab-clubelo" onclick="switchAppTab('clubelo')">&#9733; Club Elo</button>
     <button class="app-tab" id="app-tab-notes" onclick="switchAppTab('notes')">&#9998; Notes</button>
     <button class="app-tab" id="app-tab-aroverview" onclick="switchAppTab('aroverview')">&#9671; A/R Overview</button>
+    <button class="app-tab" id="app-tab-mvranking" onclick="switchAppTab('mvranking')">&#8364; MV Ranking</button>
   </div>
 </div>
 
@@ -1414,6 +1456,44 @@ table.matches tr:hover td {
       <button class="aro-btn" onclick="resetARO()">&#8635; Reset</button>
     </div>
     <div id="aro-body"></div>
+  </div>
+</div>
+
+<!-- ===== MV RANKING SECTION ===== -->
+<div id="section-mvranking" class="app-section">
+  <div class="wrapper">
+    <h1>&#8364; Valeur Marchande &mdash; Power Ranking</h1>
+    <p class="subtitle">Snapshot Transfermarkt &middot; Ao&ucirc;t 2026 &middot; Valeurs totales d&rsquo;effectif (M&euro;)</p>
+    <div class="mv-legend">
+      <span><span class="mv-legend-dot" style="background:linear-gradient(90deg,#2a6fff,#7ec8ff)"></span>Elite (&ge;500M€)</span>
+      <span><span class="mv-legend-dot" style="background:#2a9d5c"></span>Top (100–500M€)</span>
+      <span><span class="mv-legend-dot" style="background:#c7952a"></span>Mid (20–100M€)</span>
+      <span><span class="mv-legend-dot" style="background:#3d4a70"></span>&lt;20M€</span>
+    </div>
+    <div class="mv-toolbar">
+      <input type="text" id="mv-search" placeholder="Filtrer club ou pays&#8230;" oninput="_mvFilter=this.value.trim(); renderMVRanking()">
+      <span class="mv-stats-badge" id="mv-stats"></span>
+    </div>
+    <div class="mv-table-wrap">
+      <table class="mv-table">
+        <thead>
+          <tr>
+            <th class="mv-rank">#</th>
+            <th class="mv-flag"></th>
+            <th id="mv-th-name" class="mv-th" onclick="sortMV('name')">Club</th>
+            <th id="mv-th-cc"   class="mv-th" onclick="sortMV('cc')">Pays</th>
+            <th id="mv-th-elo"  class="mv-th" onclick="sortMV('elo')" style="text-align:right">Elo</th>
+            <th id="mv-th-avg"  class="mv-th" onclick="sortMV('avg')" style="text-align:right">&#248; Joueur</th>
+            <th id="mv-th-total" class="mv-th mv-sort-active" onclick="sortMV('total')" style="text-align:right">Total effectif &#8595;</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="mv-tbody">
+          <tr><td colspan="8" style="text-align:center;padding:24px;color:#7888b0">Chargement&#8230;</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mv-source">Source&nbsp;: transfermarkt.fr &mdash; snapshot statique ao&ucirc;t 2026. Mis &agrave; jour manuellement.</p>
   </div>
 </div>
 
@@ -1957,6 +2037,9 @@ function switchAppTab(tab) {
   } else if (tab === 'aroverview') {
     document.getElementById('section-aroverview').classList.add('active');
     renderARO();
+  } else if (tab === 'mvranking') {
+    document.getElementById('section-mvranking').classList.add('active');
+    initMVRanking();
   } else {
     document.getElementById('section-clubelo').classList.add('active');
   }
@@ -3096,6 +3179,316 @@ async function init() {
 }
 
 init();
+
+// ========== MV RANKING ==========
+
+var _mvClubs = null;
+var _mvSortBy = 'total';
+var _mvSortDir = -1;   // -1 = desc
+var _mvFilter  = '';
+
+var COUNTRY_FLAGS = {
+  ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', GER:'🇩🇪', ESP:'🇪🇸', ITA:'🇮🇹', FRA:'🇫🇷',
+  NED:'🇳🇱', POR:'🇵🇹', BEL:'🇧🇪', TUR:'🇹🇷', SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+  AUT:'🇦🇹', NOR:'🇳🇴', SUI:'🇨🇭', GRE:'🇬🇷', CZE:'🇨🇿',
+  POL:'🇵🇱', CRO:'🇭🇷', DEN:'🇩🇰', SWE:'🇸🇪', ISL:'🇮🇸',
+  SRB:'🇷🇸', HUN:'🇭🇺', SVK:'🇸🇰', SVN:'🇸🇮', UKR:'🇺🇦',
+  ROU:'🇷🇴', BUL:'🇧🇬', ISR:'🇮🇱', FIN:'🇫🇮', IRL:'🇮🇪',
+  ARM:'🇦🇲', AZE:'🇦🇿', BLR:'🇧🇾', KAZ:'🇰🇿', XKX:'🇽🇰',
+  MDA:'🇲🇩', CYP:'🇨🇾', ALB:'🇦🇱', GEO:'🇬🇪', FAR:'🇫🇴',
+  GIB:'🇬🇮', NIR:'🇬🇧', WAL:'🏴󠁧󠁢󠁷󠁬󠁳󠁿', SMR:'🇸🇲', LUX:'🇱🇺',
+  AND:'🇦🇩', MNE:'🇲🇪', LTU:'🇱🇹', MLT:'🇲🇹', LVA:'🇱🇻',
+  EST:'🇪🇪', BIH:'🇧🇦', LIE:'🇱🇮', MKD:'🇲🇰'
+};
+
+// Snapshot Transfermarkt août 2026 — { avg: M€/joueur, total: M€ effectif }
+// Clés = noms canoniques DB
+var MV_DATA = {
+  // ANGLETERRE
+  'Manchester City':     {avg:47.43, total:1470},
+  'Arsenal':             {avg:48.50, total:1410},
+  'Liverpool':           {avg:33.78, total:979.5},
+  'Manchester United':   {avg:29.14, total:874.3},
+  'Bournemouth':         {avg:18.48, total:572.88},
+  'Aston Villa':         {avg:20.38, total:530.0},
+  'Crystal Palace':      {avg:17.40, total:504.7},
+  'Sunderland':          {avg:13.07, total:392.08},
+  // ALLEMAGNE
+  'Bayern Munich':       {avg:38.43, total:1080},
+  'RB Leipzig':          {avg:15.14, total:514.6},
+  'Bayer Leverkusen':    {avg:15.59, total:498.95},
+  'Borussia Dortmund':   {avg:17.86, total:482.2},
+  'VfB Stuttgart':       {avg:11.64, total:418.95},
+  'TSG Hoffenheim':      {avg:9.45,  total:302.45},
+  'Mainz 05':            {avg:5.83,  total:169.2},
+  // ESPAGNE
+  'Real Madrid':         {avg:52.11, total:1460},
+  'Barcelona':           {avg:40.60, total:1300},
+  'Atletico Madrid':     {avg:26.85, total:644.3},
+  'Villarreal':          {avg:13.19, total:329.7},
+  'Real Sociedad':       {avg:9.70,  total:252.3},
+  'Real Betis':          {avg:9.38,  total:234.6},
+  'Celta Vigo':          {avg:6.20,  total:167.3},
+  'Rayo Vallecano':      {avg:3.63,  total:90.7},
+  // ITALIE
+  'Inter Milan':         {avg:27.75, total:693.8},
+  'Milan':               {avg:18.04, total:577.2},
+  'Juventus':            {avg:19.38, total:542.7},
+  'Como':                {avg:12.66, total:506.5},
+  'Roma':                {avg:16.42, total:476.25},
+  'Napoli':              {avg:13.17, total:447.85},
+  'Fiorentina':          {avg:11.66, total:338.05},
+  // FRANCE (total seulement)
+  'Paris Saint-Germain': {avg:null,  total:1390},
+  'Strasbourg':          {avg:null,  total:320.05},
+  'Lille':               {avg:null,  total:317.1},
+  'Lyon':                {avg:null,  total:279.25},
+  'Rennes':              {avg:null,  total:275.6},
+  'Marseille':           {avg:null,  total:248.0},
+  'Lens':                {avg:null,  total:172.45},
+  'Toulouse':            {avg:null,  total:122.4},
+  // PAYS-BAS
+  'PSV Eindhoven':       {avg:10.18, total:284.95},
+  'Feyenoord':           {avg:8.23,  total:230.55},
+  'AZ':                  {avg:4.72,  total:160.4},
+  'Twente':              {avg:2.68,  total:85.85},
+  'Nijmegen':            {avg:1.38,  total:41.53},
+  // PORTUGAL
+  'Porto':               {avg:15.57, total:467.1},
+  'Sporting CP':         {avg:14.89, total:446.7},
+  'Benfica':             {avg:13.29, total:385.55},
+  'SL Benfica':          {avg:13.29, total:385.55},
+  'Santa Clara':         {avg:0.79,  total:26.88},
+  // BELGIQUE
+  'Club Brugge':         {avg:6.87,  total:199.1},
+  'Royale Union SG':     {avg:4.56,  total:141.4},
+  'Anderlecht':          {avg:2.41,  total:82.0},
+  'Charleroi':           {avg:1.28,  total:30.7},
+  'Sint-Truiden':        {avg:1.22,  total:29.2},
+  // TURQUIE
+  'Galatasaray':         {avg:9.55,  total:324.65},
+  'Fenerbahçe':          {avg:8.10,  total:332.15},
+  'Beşiktaş':            {avg:5.95,  total:202.4},
+  'Trabzonspor':         {avg:5.03,  total:155.9},
+  'Istanbul Basaksehir': {avg:2.08,  total:79.18},
+  'Istanbul Başakşehir': {avg:2.08,  total:79.18},
+  'Samsunspor':          {avg:1.35,  total:51.15},
+  // ÉCOSSE
+  'Rangers':             {avg:4.81,  total:134.65},
+  'Celtic':              {avg:4.75,  total:123.5},
+  'Hearts':              {avg:0.797, total:25.5},
+  'Hibernian':           {avg:0.711, total:19.9},
+  'Aberdeen':            {avg:0.503, total:16.1},
+  'Dundee United':       {avg:0.501, total:11.53},
+  // AUTRICHE
+  'Red Bull Salzburg':   {avg:3.30,  total:112.15},
+  'Sturm Graz':          {avg:2.03,  total:56.83},
+  'Rapid Wien':          {avg:1.36,  total:46.15},
+  'LASK':                {avg:1.91,  total:43.9},
+  'Austria Wien':        {avg:0.773, total:23.18},
+  'Wolfsberger AC':      {avg:0.494, total:14.33},
+  // NORVÈGE
+  'Bodo/Glimt':          {avg:3.12,  total:74.78},
+  'Viking':              {avg:1.58,  total:48.98},
+  'Rosenborg':           {avg:0.850, total:22.95},
+  'Fredrikstad':         {avg:0.558, total:14.5},
+  'Lillestrom':          {avg:0.533, total:12.8},
+  'Tromsø':              {avg:0.633, total:15.2},
+  'Tromso':              {avg:0.633, total:15.2},
+  // SUISSE
+  'Lugano':              {avg:1.25,  total:37.58},
+  'Servette':            {avg:0.704, total:22.53},
+  'Lausanne-Sport':      {avg:1.06,  total:27.68},
+  'Thun':                {avg:0.653, total:18.28},
+  'Vaduz':               {avg:0.219, total:5.93},
+  'St. Gallen':          {avg:1.06,  total:31.85},
+  // GRÈCE
+  'Olympiacos Piraeus':  {avg:5.54,  total:160.6},
+  'PAOK':                {avg:3.01,  total:99.4},
+  'AEK Athens':          {avg:3.03,  total:88.0},
+  'Aris':                {avg:1.02,  total:28.55},
+  'OFI':                 {avg:0.609, total:17.05},
+  // TCHÉQUIE
+  'Slavia Prague':       {avg:3.23,  total:122.55},
+  'Sparta Prague':       {avg:2.62,  total:91.7},
+  'Viktoria Plzen':      {avg:2.04,  total:57.1},
+  'Sigma Olomouc':       {avg:0.898, total:29.63},
+  'Banik Ostrava':       {avg:0.615, total:19.08},
+  'Hradec Králové':      {avg:0.443, total:12.85},
+  // POLOGNE
+  'Lech Poznań':         {avg:2.12,  total:55.0},
+  'Raków Częstochowa':   {avg:1.12,  total:32.4},
+  'Jagiellonia':         {avg:0.867, total:28.6},
+  'Górnik Zabrze':       {avg:0.957, total:27.75},
+  'Legia Warsaw':        {avg:0.616, total:17.25},
+  // CROATIE
+  'Dinamo Zagreb':       {avg:1.98,  total:65.46},
+  'Hajduk Split':        {avg:1.02,  total:33.58},
+  'Varaždin':            {avg:0.380, total:11.4},
+  'Varazdin':            {avg:0.380, total:11.4},
+  // DANEMARK
+  'Midtjylland':         {avg:3.29,  total:108.45},
+  'FC Copenhagen':       {avg:2.53,  total:68.25},
+  'Brøndby':             {avg:1.56,  total:49.85},
+  'Nordsjælland':        {avg:1.27,  total:36.8},
+  'Nordsjaelland':       {avg:1.27,  total:36.8},
+  'AGF':                 {avg:1.28,  total:35.73},
+  'Silkeborg':           {avg:0.755, total:18.88},
+  // SUÈDE
+  'Hammarby IF':         {avg:1.39,  total:34.7},
+  'AIK':                 {avg:0.686, total:21.28},
+  'BK Hacken':           {avg:0.628, total:15.7},
+  'Mjallby AIF':         {avg:0.685, total:17.8},
+  // ISLANDE
+  'Víkingur Reykjavík':  {avg:0.185, total:4.99},
+  'Breidablik':          {avg:0.160, total:3.36},
+  'KA':                  {avg:0.074, total:2.01},
+  // SERBIE
+  'Red Star Belgrade':   {avg:3.65,  total:116.75},
+  'Partizan':            {avg:1.32,  total:45.0},
+  'Železničar Pančevo':  {avg:0.469, total:14.08},
+  'Novi Pazar':          {avg:0.314, total:10.38},
+  'Radnički 1923':       {avg:0.314, total:9.1},
+  // HONGRIE
+  'Ferencváros':         {avg:1.00,  total:40.0},
+  'Gyor':                {avg:0.470, total:14.1},
+  'Paks':                {avg:0.260, total:8.05},
+  'Puskás Akadémia':     {avg:0.363, total:10.88},
+  // SLOVAQUIE
+  'Slovan Bratislava':   {avg:1.20,  total:34.79},
+  'Spartak Trnava':      {avg:0.243, total:6.8},
+  'Zilina':              {avg:0.472, total:11.8},
+  'Košice':              {avg:0.203, total:6.5},
+  // SLOVÉNIE
+  'Celje':               {avg:0.424, total:13.58},
+  'Olimpija Ljubljana':  {avg:0.377, total:11.7},
+  'Maribor':             {avg:0.360, total:9.71},
+  // UKRAINE
+  'Shakhtar Donetsk':    {avg:5.06,  total:177.25},
+  'Dynamo Kyiv':         {avg:2.46,  total:91.03},
+  'Polissya Zhytomyr':   {avg:1.05,  total:34.5},
+  // ROUMANIE
+  'Universitatea Craiova':{avg:1.28, total:37.25},
+  'Universitatea Cluj':  {avg:0.533, total:18.14},
+  // BULGARIE
+  'Levski Sofia':        {avg:1.40,  total:37.83},
+  'Arda':                {avg:0.458, total:10.55},
+  'Cherno More':         {avg:0.222, total:6.45},
+  'CSKA Sofia':          {avg:1.05,  total:26.15},
+  // ISRAËL
+  'Maccabi Tel Aviv':    {avg:0.957, total:36.38},
+  'Maccabi Haifa':       {avg:0.722, total:28.18},
+  'Hapoel Beer Sheva':   {avg:0.719, total:20.13},
+  'Beitar Jerusalem':    {avg:0.568, total:17.04},
+  // FINLANDE
+  'KuPS':                {avg:0.217, total:6.3},
+  'Ilves':               {avg:0.171, total:4.28}
+};
+
+function formatMV(v) {
+  if (v === null || v === undefined) return '<span class="mv-nd">—</span>';
+  if (v >= 1000) return (v / 1000).toFixed(2).replace('.', ',') + '&nbsp;Mrd€';
+  if (v >= 0.095) return v.toFixed(1).replace('.', ',') + '&nbsp;M€';
+  return Math.round(v * 1000) + '&nbsp;K€';
+}
+
+function getTierClass(total) {
+  if (!total) return '';
+  if (total >= 500)  return 'mv-tier-elite';
+  if (total >= 100)  return 'mv-tier-top';
+  if (total >= 20)   return 'mv-tier-mid';
+  return 'mv-tier-low';
+}
+
+function sortMV(col) {
+  if (_mvSortBy === col) { _mvSortDir *= -1; }
+  else { _mvSortBy = col; _mvSortDir = (col === 'name' || col === 'cc') ? 1 : -1; }
+  renderMVRanking();
+}
+
+async function initMVRanking() {
+  if (_mvClubs !== null) { renderMVRanking(); return; }
+  var { data, error } = await supabaseClient.from('clubs').select('name,country_code,elo');
+  if (error) {
+    document.getElementById('mv-tbody').innerHTML =
+      '<tr><td colspan="8" style="color:#ff6b6b;padding:16px">Erreur: ' + error.message + '</td></tr>';
+    return;
+  }
+  _mvClubs = (data || []).map(function(c) {
+    var mv = MV_DATA[c.name] || {};
+    return {
+      name: c.name,
+      cc:   c.country_code || '',
+      elo:  c.elo || 0,
+      avg:  (mv.avg  !== undefined) ? mv.avg  : null,
+      total:(mv.total!== undefined) ? mv.total : null
+    };
+  });
+  renderMVRanking();
+}
+
+function renderMVRanking() {
+  if (!_mvClubs) return;
+  var f = _mvFilter.toLowerCase();
+  var clubs = _mvClubs.filter(function(c) {
+    return !f || c.name.toLowerCase().includes(f) || c.cc.toLowerCase().includes(f);
+  });
+
+  var by = _mvSortBy, dir = _mvSortDir;
+  clubs = clubs.slice().sort(function(a, b) {
+    var av = a[by], bv = b[by];
+    if (by === 'name' || by === 'cc') {
+      return dir * (av || '').localeCompare(bv || '');
+    }
+    if (av === null && bv === null) return a.name.localeCompare(b.name);
+    if (av === null) return 1;
+    if (bv === null) return -1;
+    return dir * (av - bv);
+  });
+
+  var maxTot = 0;
+  clubs.forEach(function(c) { if (c.total > maxTot) maxTot = c.total; });
+  var logMax = maxTot > 0 ? Math.log10(maxTot) : 1;
+
+  var withData = clubs.filter(function(c) { return c.total !== null; }).length;
+  document.getElementById('mv-stats').textContent =
+    withData + ' clubs avec données · ' + clubs.length + ' affichés';
+
+  var rank = 0;
+  var rows = clubs.map(function(c) {
+    var hasVal = c.total !== null;
+    if (hasVal && (by === 'total' || by === 'avg')) rank++;
+    var rankStr = hasVal ? (by === 'total' || by === 'avg' ? rank : '·') : '—';
+    var flag = COUNTRY_FLAGS[c.cc] || '🏳';
+    var barW = hasVal ? Math.max(2, Math.log10(c.total) / logMax * 100).toFixed(1) : 0;
+    var eloStr = c.elo > 0 ? c.elo : '<span class="mv-nd">—</span>';
+    return '<tr class="' + (hasVal ? '' : 'mv-nodata') + '">' +
+      '<td class="mv-rank">' + rankStr + '</td>' +
+      '<td class="mv-flag">' + flag + '</td>' +
+      '<td class="mv-name">' + c.name + '</td>' +
+      '<td class="mv-cc">'  + c.cc   + '</td>' +
+      '<td class="mv-elo">' + eloStr + '</td>' +
+      '<td class="mv-avg">' + formatMV(c.avg)   + '</td>' +
+      '<td class="mv-total">'+ formatMV(c.total) + '</td>' +
+      '<td class="mv-bar-cell"><div class="mv-bar ' + getTierClass(c.total) +
+        '" style="width:' + barW + '%"></div></td>' +
+      '</tr>';
+  });
+
+  document.getElementById('mv-tbody').innerHTML = rows.join('') ||
+    '<tr><td colspan="8" style="text-align:center;padding:20px;color:#7888b0">Aucun r&eacute;sultat</td></tr>';
+
+  // Update column header arrows
+  var cols = {name:'Club', cc:'Pays', elo:'Elo', avg:'&#248;&nbsp;Joueur', total:'Total effectif'};
+  Object.keys(cols).forEach(function(col) {
+    var el = document.getElementById('mv-th-' + col);
+    if (!el) return;
+    el.classList.toggle('mv-sort-active', _mvSortBy === col);
+    var arrow = _mvSortBy === col ? (_mvSortDir === -1 ? ' &#8595;' : ' &#8593;') : '';
+    el.innerHTML = cols[col] + arrow;
+  });
+}
+
 </script>
 </body>
 </html>

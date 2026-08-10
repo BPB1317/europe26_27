@@ -3408,7 +3408,7 @@ function sortMV(col) {
 
 async function initMVRanking() {
   if (_mvClubs !== null) { renderMVRanking(); return; }
-  var { data, error } = await supabaseClient.from('clubs').select('name,country_code,elo');
+  var { data, error } = await db.from('clubs').select('name,country_code,elo');
   if (error) {
     document.getElementById('mv-tbody').innerHTML =
       '<tr><td colspan="8" style="color:#ff6b6b;padding:16px">Erreur: ' + error.message + '</td></tr>';

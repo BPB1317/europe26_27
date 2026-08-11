@@ -4701,9 +4701,7 @@ function buildCountryChips() {
     if (!counts[c.cc]) counts[c.cc] = {eu:0, dom:0};
     counts[c.cc][c.source] = (counts[c.cc][c.source]||0) + 1;
   });
-  var ccs = Object.keys(counts).sort(function(a,b){
-    return (counts[b].eu+counts[b].dom) - (counts[a].eu+counts[a].dom);
-  });
+  var ccs = Object.keys(counts).sort();
   var container = document.getElementById('mv-cc-chips');
   if (!container) return;
   container.innerHTML = ccs.map(function(cc) {

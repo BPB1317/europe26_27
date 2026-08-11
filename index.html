@@ -3203,7 +3203,7 @@ var COUNTRY_FLAGS = {
 
 // Snapshot Transfermarkt août 2026 — { avg: M€/joueur, total: M€ effectif }
 // Clés = noms canoniques DB
-var MV_DATA = {
+var MV_DATA_ACTUAL = {
   // ANGLETERRE
   'Manchester City':     {avg:47.43, total:1470},
   'Arsenal':             {avg:48.50, total:1410},
@@ -3606,6 +3606,412 @@ var MV_DATA = {
   'Víkingur': {avg:0.070, total:null},
   'NSÍ': {avg:0.090, total:null},
   'NSI Runavik': {avg:0.090, total:null},
+};
+// Valeurs réharmonisées sur la courbe de régression (prédites par Elo)
+// Pour revenir aux valeurs réelles : utiliser MV_DATA_ACTUAL
+var MV_DATA = {
+  // ANGLETERRE
+  'Manchester City':     {avg:35.200, total:1091.3},
+  'Arsenal':             {avg:39.300, total:1142.6},
+  'Liverpool':           {avg:16.910, total:490.5},
+  'Manchester United':   {avg:15.150, total:454.7},
+  'Bournemouth':         {avg:8.130, total:251.9},
+  'Aston Villa':         {avg:9.760, total:253.8},
+  'Crystal Palace':      {avg:5.840, total:169.5},
+  'Sunderland':          {avg:4.200, total:126.0},
+  // ALLEMAGNE
+  'Bayern Munich':       {avg:35.200, total:989.0},
+  'RB Leipzig':          {avg:12.620, total:428.8},
+  'Bayer Leverkusen':    {avg:9.070, total:290.3},
+  'Borussia Dortmund':   {avg:9.070, total:244.9},
+  'VfB Stuttgart':       {avg:7.550, total:271.9},
+  'TSG Hoffenheim':      {avg:6.520,  total:208.7},
+  'Mainz 05':            {avg:4.200,  total:121.9},
+  // ESPAGNE
+  'Real Madrid':         {avg:31.540, total:883.8},
+  'Barcelona':           {avg:31.540, total:1010.1},
+  'Atletico Madrid':     {avg:14.080, total:337.9},
+  'Villarreal':          {avg:9.410, total:235.2},
+  'Real Sociedad':       {avg:8.130,  total:211.3},
+  'Real Betis':          {avg:6.520,  total:163.1},
+  'Celta Vigo':          {avg:5.050,  total:136.1},
+  'Rayo Vallecano':      {avg:4.520,  total:113.0},
+  // ITALIE
+  'Inter Milan':         {avg:22.680, total:566.8},
+  'Milan':               {avg:10.900, total:348.6},
+  'Juventus':            {avg:13.090, total:366.4},
+  'Como':                {avg:10.900, total:435.9},
+  'Roma':                {avg:9.760, total:283.1},
+  'Napoli':              {avg:10.900, total:370.4},
+  'Fiorentina':          {avg:4.360, total:126.4},
+  // FRANCE (total seulement)
+  'Paris Saint-Germain': {avg:39.300,  total:1021.3},
+  'Strasbourg':          {avg:5.630,  total:174.7},
+  'Lille':               {avg:6.520,  total:189.2},
+  'Lyon':                {avg:5.230,  total:172.8},
+  'Rennes':              {avg:5.630,  total:169.0},
+  'Marseille':           {avg:7.280,  total:167.5},
+  'Lens':                {avg:7.280,  total:203.8},
+  'Toulouse':            {avg:null,  total:122.4},
+  // PAYS-BAS
+  'PSV Eindhoven':       {avg:7.280, total:203.8},
+  'Feyenoord':           {avg:3.370,  total:94.4},
+  'AZ':                  {avg:2.250,  total:76.6},
+  'Twente':              {avg:2.340,  total:74.8},
+  'Nijmegen':            {avg:2.170,  total:65.4},
+  // PORTUGAL
+  'Porto':               {avg:6.020, total:180.5},
+  'Sporting CP':         {avg:9.000, total:270.1},
+  'Benfica':             {avg:7.230, total:209.7},
+  'SL Benfica':          {avg:13.29, total:385.55},
+  'Santa Clara':         {avg:0.890,  total:30.4},
+  // BELGIQUE
+  'Club Brugge':         {avg:6.060,  total:175.7},
+  'Royale Union SG':     {avg:4.860,  total:150.9},
+  'Anderlecht':          {avg:1.880,  total:63.8},
+  'Charleroi':           {avg:1.510,  total:36.1},
+  'Sint-Truiden':        {avg:1.680,  total:40.2},
+  // TURQUIE
+  'Galatasaray':         {avg:5.550,  total:188.8},
+  'Fenerbahçe':          {avg:5.550,  total:227.7},
+  'Beşiktaş':            {avg:2.850,  total:96.9},
+  'Trabzonspor':         {avg:2.120,  total:65.9},
+  'Istanbul Basaksehir': {avg:1.380,  total:52.5},
+  'Istanbul Başakşehir': {avg:2.08,  total:79.18},
+  'Samsunspor':          {avg:1.040,  total:39.5},
+  // ÉCOSSE
+  'Rangers':             {avg:2.340,  total:65.4},
+  'Celtic':              {avg:3.900,  total:101.5},
+  'Hearts':              {avg:1.350, total:43.1},
+  'Hibernian':           {avg:0.770, total:21.6},
+  'Aberdeen':            {avg:0.520, total:16.5},
+  'Dundee United':       {avg:0.430, total:9.8},
+  // AUTRICHE
+  'Red Bull Salzburg':   {avg:3.130,  total:106.5},
+  'Sturm Graz':          {avg:1.690,  total:47.4},
+  'Rapid Wien':          {avg:1.310,  total:44.5},
+  'LASK':                {avg:1.890,  total:43.4},
+  'Austria Wien':        {avg:1.010, total:30.4},
+  'Wolfsberger AC':      {avg:0.900, total:26.1},
+  // NORVÈGE
+  'Bodo/Glimt':          {avg:4.360,  total:104.4},
+  'Viking':              {avg:2.090,  total:64.9},
+  'Rosenborg':           {avg:0.810, total:21.8},
+  'Fredrikstad':         {avg:0.600, total:15.6},
+  'Lillestrom':          {avg:1.010, total:24.2},
+  'Tromsø':              {avg:1.510, total:36.2},
+  'Tromso':              {avg:0.633, total:15.2},
+  // SUISSE
+  'Lugano':              {avg:1.080,  total:32.5},
+  'Servette':            {avg:1.010, total:32.2},
+  'Lausanne-Sport':      {avg:1.010,  total:26.3},
+  'Thun':                {avg:0.750, total:21.0},
+  'Vaduz':               {avg:0.390, total:10.5},
+  'St. Gallen':          {avg:1.080,  total:32.5},
+  // GRÈCE
+  'Olympiacos Piraeus':  {avg:5.840,  total:169.4},
+  'PAOK':                {avg:2.830,  total:93.4},
+  'AEK Athens':          {avg:2.270,  total:65.9},
+  'Aris':                {avg:1.02,  total:28.55},
+  'OFI':                 {avg:0.750, total:21.0},
+  // TCHÉQUIE
+  'Slavia Prague':       {avg:4.830,  total:183.2},
+  'Sparta Prague':       {avg:1.960,  total:68.6},
+  'Viktoria Plzen':      {avg:2.250,  total:63.1},
+  'Sigma Olomouc':       {avg:0.900, total:29.7},
+  'Banik Ostrava':       {avg:0.900, total:28.0},
+  'Hradec Králové':      {avg:0.650, total:18.8},
+  // POLOGNE
+  'Lech Poznań':         {avg:2.090,  total:54.3},
+  'Raków Częstochowa':   {avg:2.170,  total:62.8},
+  'Jagiellonia':         {avg:1.620, total:53.5},
+  'Górnik Zabrze':       {avg:1.210, total:35.0},
+  'Legia Warsaw':        {avg:1.740, total:48.9},
+  // CROATIE
+  'Dinamo Zagreb':       {avg:2.810,  total:92.9},
+  'Hajduk Split':        {avg:1.080,  total:35.6},
+  'Varaždin':            {avg:0.360, total:10.8},
+  'Varazdin':            {avg:0.500, total:15.0},
+  // DANEMARK
+  'Midtjylland':         {avg:3.600,  total:118.8},
+  'FC Copenhagen':       {avg:2.590,  total:69.9},
+  'Brøndby':             {avg:1.600,  total:51.0},
+  'Nordsjælland':        {avg:1.230,  total:35.5},
+  'Nordsjaelland':       {avg:1.27,  total:36.8},
+  'AGF':                 {avg:1.840,  total:51.3},
+  'Silkeborg':           {avg:0.450, total:11.2},
+  // SUÈDE
+  'Hammarby IF':         {avg:1.350,  total:33.7},
+  'AIK':                 {avg:0.430, total:13.4},
+  'BK Hacken':           {avg:0.670, total:16.8},
+  'Mjallby AIF':         {avg:0.540, total:14.0},
+  // ISLANDE
+  'Víkingur Reykjavík':  {avg:0.520, total:14.0},
+  'Breidablik':          {avg:0.250, total:5.2},
+  'KA':                  {avg:0.090, total:2.4},
+  // SERBIE
+  'Red Star Belgrade':   {avg:3.130,  total:100.2},
+  'Partizan':            {avg:0.580,  total:19.8},
+  'Železničar Pančevo':  {avg:0.350, total:10.4},
+  'Novi Pazar':          {avg:0.314, total:10.38},
+  'Radnički 1923':       {avg:0.314, total:9.1},
+  // HONGRIE
+  'Ferencváros':         {avg:1.570,  total:62.9},
+  'Gyor':                {avg:0.840, total:25.1},
+  'Paks':                {avg:0.500, total:15.5},
+  'Puskás Akadémia':     {avg:0.363, total:10.88},
+  // SLOVAQUIE
+  'Slovan Bratislava':   {avg:0.900,  total:26.1},
+  'Spartak Trnava':      {avg:0.420, total:11.7},
+  'Zilina':              {avg:0.340, total:8.4},
+  'Košice':              {avg:0.203, total:6.5},
+  // SLOVÉNIE
+  'Celje':               {avg:0.810, total:25.9},
+  'Olimpija Ljubljana':  {avg:0.650, total:20.1},
+  'Maribor':             {avg:0.520, total:14.0},
+  // UKRAINE
+  'Shakhtar Donetsk':    {avg:3.130,  total:109.8},
+  'Dynamo Kyiv':         {avg:1.880,  total:69.4},
+  'Polissya Zhytomyr':   {avg:1.350,  total:44.3},
+  // ROUMANIE
+  'Universitatea Craiova':{avg:1.160, total:33.9},
+  'Universitatea Cluj':  {avg:0.560, total:19.1},
+  // BULGARIE
+  'Levski Sofia':        {avg:1.250,  total:33.9},
+  'Arda':                {avg:0.458, total:10.55},
+  'Cherno More':         {avg:0.222, total:6.45},
+  'CSKA Sofia':          {avg:0.620,  total:15.6},
+  // ISRAËL
+  'Maccabi Tel Aviv':    {avg:1.250, total:47.7},
+  'Maccabi Haifa':       {avg:0.580, total:22.7},
+  'Hapoel Beer Sheva':   {avg:1.160, total:32.6},
+  'Beitar Jerusalem':    {avg:1.010, total:30.2},
+  // FINLANDE
+  'KuPS':                {avg:0.470, total:13.5},
+  'Ilves':               {avg:0.220, total:5.4},
+  // IRLANDE DU NORD
+  'Larne':               {avg:0.090, total:2.2},
+  'Dungannon Swifts':    {avg:0.099, total:2.59},
+  'Linfield':            {avg:0.070, total:1.4},
+  // PAYS DE GALLES
+  'The New Saints':      {avg:0.220, total:6.5},
+  // ESTONIE
+  'FCI Levadia':         {avg:0.200, total:4.4},
+  // LETTONIE
+  'Riga FC':             {avg:0.511, total:15.33},
+  'FK Liepaja':          {avg:0.130, total:3.5},
+  // BIÉLORUSSIE
+  'Dinamo Minsk':        {avg:0.360, total:9.0},
+  // ARMÉNIE
+  'Ararat-Armenia':      {avg:0.310, total:8.1},
+  // ALBANIE
+  'Egnatia':             {avg:0.280, total:6.7},
+  'Dinamo City':         {avg:0.280, total:8.4},
+  // IRLANDE
+  'Shamrock Rovers':     {avg:0.360, total:13.0},
+  'Derry City':          {avg:0.160, total:4.8},
+  // BOSNIE
+  'Sarajevo':            {avg:0.280, total:10.0},
+  // MACÉDOINE DU NORD
+  'Shkendija':           {avg:0.250, total:5.7},
+  // MOLDAVIE
+  'Sheriff Tiraspol':    {avg:0.300, total:8.4},
+  // CHYPRE
+  'Pafos':               {avg:1.950,  total:50.4},
+  'Omonia':              {avg:1.560, total:48.5},
+  'Aris Limassol':       {avg:0.810, total:21.8},
+  // MONTÉNÉGRO
+  'Budućnost Podgorica': {avg:0.150, total:3.46},
+  // ANDORRE
+  "Inter Club d'Escaldes": {avg:0.120, total:3.5},
+  "Atlètic Club d'Escaldes": {avg:0.040, total:1.1},
+  // LUXEMBOURG
+  'UNA Strassen':        {avg:0.100, total:2.7},
+  'Differdange 03':      {avg:0.160, total:3.7},
+  // MALTE
+  'Hibernians':          {avg:0.125, total:3.86},
+  // GIBRALTAR
+  'Lincoln Red Imps':    {avg:0.240,  total:5.8},
+  // ÎLES FÉROÉ
+  'HB':                  {avg:0.040,  total:1.2},
+  'KÍ':                  {avg:0.300,  total:8.7},
+  'Vikingur Gota':       {avg:0.090,  total:2.1},
+  // KOSOVO
+  'FC Ballkani':         {avg:null,  total:6.64},
+  // KAZAKHSTAN
+  'Kairat':              {avg:0.900, total:22.5},
+  'Astana':              {avg:0.900, total:26.2},
+  'Aktobe':              {avg:0.369, total:9.23},
+  // LITUANIE
+  'Banga':               {avg:null,  total:5.83},
+  'Zalgiris':            {avg:0.230,  total:7.2},
+  // AZERBAÏDJAN
+  'Sabah':               {avg:1.040,  total:60.1},
+  // GÉORGIE
+  'Spaeri':              {avg:null,  total:1.56},
+  'Iberia 1999':         {avg:0.220, total:5.4},
+  // LITUANIE (suite)
+  'Kauno Žalgiris':      {avg:0.390, total:11.0},
+  // AZERBAÏDJAN (suite)
+  'Araz-Naxçıvan':       {avg:0.250, total:6.0},
+  'Zira':                {avg:0.290, total:7.6},
+  // KOSOVO (suite)
+  'Prishtina':           {avg:0.200, total:6.5},
+  // MOLDAVIE (suite)
+  'Milsami Orhei':       {avg:0.080, total:2.5},
+  'Zimbru Chișinău':     {avg:0.190, total:6.0},
+  // BONUS — autres clubs en DB depuis matchs
+  'CSKA Sofia':          {avg:0.620,  total:15.6},
+  'Pafos':               {avg:1.950,  total:50.4},
+  'St. Gallen':          {avg:1.080,  total:32.5},
+  'Maccabi Tel Aviv':    {avg:1.250, total:47.7},
+  // ── Nouveaux clubs (régression 272 clubs, août 2026) ─────────────────────────
+  // ALBANIE
+  'Elbasani': {avg:0.190, total:5.3},
+  'Vllaznia': {avg:0.280, total:7.8},
+  // ANDORRE
+  'FC Santa Coloma': {avg:0.090, total:2.5},
+  // ARMÉNIE
+  'Alashkert': {avg:0.150, total:4.2},
+  'Pyunik': {avg:0.310, total:8.7},
+  'Noah': {avg:0.580, total:16.2},
+  // AZERBAÏDJAN
+  'Neftchi': {avg:0.840, total:23.5},
+  'Qarabag': {avg:1.740, total:48.7},
+  // BELGIQUE
+  'Gent': {avg:1.510, total:42.3},
+  // BIÉLORUSSIE
+  'BATE Borisov': {avg:0.080, total:2.2},
+  'ML Vitebsk': {avg:0.450, total:12.6},
+  // BOSNIE
+  'Velez Mostar': {avg:0.140, total:3.9},
+  'Velež Mostar': {avg:0.140, total:3.9},
+  'Zrinjski Mostar': {avg:0.420, total:11.8},
+  'Borac Banja Luka': {avg:0.580, total:16.2},
+  // BULGARIE
+  'Ludogorets': {avg:1.300, total:36.4},
+  'CSKA 1948': {avg:0.450, total:12.6},
+  // CHYPRE
+  'Apollon Limassol': {avg:0.930, total:26.0},
+  'AEK Larnaca': {avg:1.160, total:32.5},
+  // CROATIE
+  'Rijeka': {avg:0.930, total:26.0},
+  // DANEMARK
+  'Copenhagen': {avg:2.590, total:72.5},
+  // ESTONIE
+  'Paide Linnameeskond': {avg:0.040, total:1.1},
+  'Flora': {avg:0.130, total:3.6},
+  'Nõmme Kalju': {avg:0.080, total:2.2},
+  // FINLANDE
+  'HJK': {avg:0.370, total:10.4},
+  'Inter Turku': {avg:0.470, total:13.2},
+  // GIBRALTAR
+  'Europa': {avg:0.020, total:0.6},
+  "St Joseph's": {avg:0.060, total:1.7},
+  // GRÈCE
+  'Panathinaikos': {avg:2.530, total:70.8},
+  // GÉORGIE
+  'Dinamo Tbilisi': {avg:0.170, total:4.8},
+  'Torpedo Kutaisi': {avg:0.210, total:5.9},
+  'Dila Gori': {avg:0.170, total:4.8},
+  // HONGRIE
+  'Debrecen': {avg:0.350, total:9.8},
+  'ETO Győr': {avg:0.840, total:23.5},
+  // IRLANDE
+  'Shelbourne': {avg:0.250, total:7.0},
+  'Bohemians': {avg:0.280, total:7.8},
+  // IRLANDE DU NORD
+  'Coleraine': {avg:0.070, total:2.0},
+  'Glentoran': {avg:0.070, total:2.0},
+  // ISLANDE
+  'Vestri': {avg:0.060, total:1.7},
+  'Stjarnan': {avg:0.170, total:4.8},
+  'Valur': {avg:0.250, total:7.0},
+  // ISRAËL
+  'Hapoel Tel Aviv': {avg:0.810, total:22.7},
+  // KAZAKHSTAN
+  'Tobol': {avg:0.350, total:9.8},
+  'Yelimay': {avg:0.350, total:9.8},
+  // KOSOVO
+  'Drita': {avg:0.190, total:5.3},
+  'Dukagjini': {avg:0.090, total:2.5},
+  'Malisheva': {avg:0.210, total:5.9},
+  'Ballkani': {avg:0.230, total:6.4},
+  // LETTONIE
+  'Liepāja': {avg:0.130, total:3.6},
+  'Auda': {avg:0.130, total:3.6},
+  'Riga': {avg:0.580, total:16.2},
+  'RFS': {avg:0.580, total:16.2},
+  // LITUANIE
+  'Panevėžys': {avg:0.070, total:2.0},
+  'Hegelmann': {avg:0.070, total:2.0},
+  'Žalgiris': {avg:0.230, total:6.4},
+  // LUXEMBOURG
+  'Atert Bissen': {avg:0.100, total:2.8},
+  'Mondorf-les-Bains': {avg:0.100, total:2.8},
+  // MACÉDOINE DU NORD
+  'Sileks': {avg:0.070, total:2.0},
+  'Shkëndija': {avg:0.250, total:7.0},
+  'Vardar': {avg:0.200, total:5.6},
+  // MALTE
+  'Valletta': {avg:0.100, total:2.8},
+  'Marsaxlokk': {avg:0.100, total:2.8},
+  'Floriana': {avg:0.150, total:4.2},
+  'Hamrun Spartans': {avg:0.250, total:7.0},
+  // MOLDAVIE
+  'Petrocub Hîncești': {avg:0.190, total:5.3},
+  // MONTÉNÉGRO
+  'Dečić': {avg:0.070, total:2.0},
+  'Mornar': {avg:0.120, total:3.4},
+  'Petrovac': {avg:0.120, total:3.4},
+  'Sutjeska': {avg:0.190, total:5.3},
+  // NORVÈGE
+  'Brann': {avg:1.880, total:52.6},
+  // PAYS DE GALLES
+  'Caernarfon Town': {avg:0.030, total:0.8},
+  'Penybont': {avg:0.030, total:0.8},
+  "Connah's Quay Nomads": {avg:0.060, total:1.7},
+  // PAYS-BAS
+  'Ajax': {avg:2.810, total:78.7},
+  // POLOGNE
+  'GKS Katowice': {avg:0.580, total:16.2},
+  // PORTUGAL
+  'Braga': {avg:2.790, total:78.1},
+  'Torreense': {avg:0.540, total:15.1},
+  // ROUMANIE
+  'CFR Cluj': {avg:0.700, total:19.6},
+  'FCSB': {avg:1.450, total:40.6},
+  // SAINT-MARIN
+  'La Fiorita': {avg:0.010, total:0.3},
+  'Tre Fiori': {avg:0.010, total:0.3},
+  'Virtus': {avg:0.010, total:0.3},
+  // SERBIE
+  'Vojvodina': {avg:0.580, total:16.2},
+  // SLOVAQUIE
+  'Žilina': {avg:0.340, total:9.5},
+  'DAC Dunajska Streda': {avg:0.650, total:18.2},
+  // SLOVÉNIE
+  'Aluminij': {avg:0.100, total:2.8},
+  'Bravo': {avg:0.190, total:5.3},
+  'Koper': {avg:0.390, total:10.9},
+  // SUISSE
+  'Sion': {avg:0.870, total:24.4},
+  // SUÈDE
+  'IFK Goteborg': {avg:0.430, total:12.0},
+  'GAIS': {avg:0.650, total:18.2},
+  // TCHÉQUIE
+  'Viktoria Plzeň': {avg:1.760, total:49.3},
+  'Jablonec': {avg:0.720, total:20.2},
+  // UKRAINE
+  'LNZ Cherkasy': {avg:1.040, total:29.1},
+  'Oleksandriya': {avg:1.040, total:29.1},
+  // ÉCOSSE
+  'Motherwell': {avg:0.720, total:20.2},
+  'Heart of Midlothian': {avg:1.350, total:37.8},
+  // ÎLES FÉROÉ
+  'Víkingur': {avg:0.060, total:1.7},
+  'NSÍ': {avg:0.130, total:3.6},
+  'NSI Runavik': {avg:0.130, total:3.6},
 };
 
 function formatMV(v) {

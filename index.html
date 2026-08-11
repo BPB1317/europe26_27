@@ -4710,7 +4710,7 @@ function buildCountryChips() {
     var flag = COUNTRY_FLAGS[cc] || '🏳';
     var n = (counts[cc].eu||0) + (counts[cc].dom||0);
     return '<span class="mv-cc-chip' + (_mvCountries.has(cc)?' active':'') +
-      '" onclick="toggleMVCountry('' + cc + '')" title="' + cc + ' — ' + n + ' clubs">' +
+      '" data-cc="' + cc + '" onclick="toggleMVCountry(this.dataset.cc)" title="' + cc + ' — ' + n + ' clubs">' +
       flag + ' ' + cc + '</span>';
   }).join('');
 }
